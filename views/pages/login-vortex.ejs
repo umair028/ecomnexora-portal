@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#030203">
+  <title><%= title %> · Ecom Nexora</title>
+  <link rel="icon" href="<%= base %>/img/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<%= base %>/css/app.css?v=<%= v %>">
+  <link rel="stylesheet" href="<%= base %>/css/login-vortex.css?v=<%= v %>">
+  <script type="importmap">
+    { "imports": { "three": "<%= base %>/vendor/three/three.module.min.js", "three/addons/": "<%= base %>/vendor/three/addons/" } }
+  </script>
+</head>
+<body class="lv-body">
+<div class="lv">
+  <!-- vortex of glowing screens over a reflective floor, drawn by js/login-vortex.js (a still gradient without WebGL) -->
+  <canvas class="lv-canvas" aria-hidden="true"></canvas>
+  <div class="lv-shade" aria-hidden="true"></div>
+
+  <header class="lv-nav">
+    <a href="<%= site %>/" class="lv-logo" aria-label="Ecom Nexora website"><img src="<%= base %>/img/logo-white.png" alt="Ecom Nexora"></a>
+    <div class="lv-nav-right">
+      <a class="lv-btn lv-btn-ghost lv-hide-sm" href="<%= site %>/"><%- icon('globe') %>Website</a>
+      <a class="lv-btn lv-btn-red" href="tel:+14243940041"><%- icon('phone') %>Let's Talk</a>
+    </div>
+  </header>
+
+  <main class="lv-main">
+    <!-- left: headline; the vortex and figure stay in the middle of the screen; right: the form -->
+    <section class="lv-stage">
+      <p class="lv-eyebrow">Ecom Nexora <span>·</span> Admin portal</p>
+      <h1 class="lv-title"><span style="--i:0">Every store,</span> <span style="--i:1">every sale,</span> <em style="--i:2">one dashboard.</em></h1>
+    </section>
+
+    <div class="lv-card-wrap">
+      <form class="lv-card" method="post" action="<%= base %>/login-vortex" novalidate>
+        <h2>Welcome back</h2>
+        <p class="lv-card-sub">Sign in to the Ecom Nexora admin portal.</p>
+        <% if (error) { %><div class="lv-alert" role="alert"><%- icon('alert') %><span><%= error %></span></div><% } %>
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="lv-field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username" placeholder="you@company.com" value="<%= email %>" required <%= email ? '' : 'autofocus' %>>
+        </div>
+        <div class="lv-field">
+          <div class="lv-label-row"><label for="password">Password</label><a href="<%= base %>/forgot-password">Forgot password?</a></div>
+          <div class="input-icon">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required <%= email ? 'autofocus' : '' %>>
+            <button type="button" data-reveal aria-label="Show password"><%- icon('eye') %></button>
+          </div>
+        </div>
+        <label class="lv-check"><input type="checkbox" name="remember" checked><span>Keep me signed in for 30 days</span></label>
+        <button class="lv-submit" type="submit">Sign in <%- icon('right') %></button>
+        <p class="lv-foot">Need access? <a href="mailto:hello@ecomnexora.com">Contact your admin</a></p>
+      </form>
+    </div>
+
+    <aside class="lv-facts" aria-label="What the portal covers">
+      <span class="lv-facts-label">Inside the portal</span>
+      <ul>
+        <li>Balances, sales and payouts for every client</li>
+        <li>Automated stores on Amazon, Shopify, Walmart and TikTok</li>
+        <li>Orders, services and reports in one place</li>
+        <li>Client messages, right next to their numbers</li>
+      </ul>
+    </aside>
+  </main>
+</div>
+<div class="toasts" id="toasts"></div>
+<script src="<%= base %>/js/app.js?v=<%= v %>"></script>
+<script type="module" src="<%= base %>/js/login-vortex.js?v=<%= v %>"></script>
+</body>
+</html>

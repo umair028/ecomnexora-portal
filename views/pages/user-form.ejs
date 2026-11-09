@@ -1,0 +1,142 @@
+<%- include('../partials/head') %>
+<%
+  const isEdit = !!user.id;
+  const v = k => (user[k] === null || user[k] === undefined) ? '' : user[k];
+  const err = k => errors[k] ? `<div class="err">${errors[k]}</div>` : '';
+  const cls = k => 'field' + (errors[k] ? ' error' : '');
+  const sales = user.sales || {}, totals = user.totals || {}, change = user.change || {};
+  const nv = x => (x === null || x === undefined) ? '' : x;
+%>
+<div class="head">
+  <div>
+    <% if (isEdit) { %><a href="<%= base %>/users/<%= user.id %>" class="btn btn-sm" style="margin-bottom:14px"><%- icon('left') %>Back to profile</a><% } %>
+    <h1><%= isEdit ? 'Edit user' : 'Add user' %></h1>
+    <div class="sub"><%= isEdit ? 'Update any field and save. Leave a field blank to clear it.' : 'Only the name is required. Leave anything else blank and fill it in later.' %></div>
+  </div>
+</div>
+
+<% if (Object.keys(errors).length) { %>
+  <div class="alert error mb" role="alert" style="margin-top:0"><%- icon('alert') %><span>Please fix the highlighted fields.</span></div>
+<% } %>
+
+<form method="post" action="<%= base + (isEdit ? '/users/' + user.id : '/users') %>" novalidate>
+  <section class="card form-card">
+    <div class="section-title" style="margin-bottom:16px">Profile</div>
+    <div class="form-grid">
+      <div class="<%= cls('name') %>"><label for="name">Name <span class="req">*</span></label><input id="name" name="name" value="<%= v('name') %>" required maxlength="80" <%= isEdit ? '' : 'autofocus' %>><%- err('name') %></div>
+      <div class="field"><label for="storeName">Store name</label><input id="storeName" name="storeName" value="<%= v('storeName') %>" maxlength="120"></div>
+      <div class="<%= cls('storeLink') %>"><label for="storeLink">Store link</label><input id="storeLink" name="storeLink" type="url" placeholder="https://" value="<%= v('storeLink') %>"><%- err('storeLink') %></div>
+      <div class="<%= cls('email') %>"><label for="email">Email</label><input id="email" name="email" type="email" value="<%= v('email') %>"><%- err('email') %></div>
+      <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" value="<%= v('phone') %>"></div>
+      <div class="field"><label for="country">Country</label><input id="country" name="country" value="<%= v('country') %>" list="countries"></div>
+      <div class="field"><label for="serviceId">Service</label><div class="select" style="width:100%"><select id="serviceId" name="serviceId">
+        <option value="">Not set</option>
+        <% [...new Set(services.map(s => s.category || 'Other'))].forEach(cat => { %><optgroup label="<%= cat %>"><% services.filter(s => (s.category || 'Other') === cat).forEach(s => { %><option value="<%= s.id %>" <%= user.serviceId === s.id ? 'selected' : '' %>><%= s.name %></option><% }) %></optgroup><% }) %>
+      </select></div></div>
+      <div class="field"><label for="status">Status</label><div class="select" style="width:100%"><select id="status" name="status">
+        <% statuses.forEach(s => { %><option <%= (user.status || 'Active') === s ? 'selected' : '' %>><%= s %></option><% }) %>
+      </select></div></div>
+      <div class="field"><label for="joinDate">Join date</label><input id="joinDate" name="joinDate" type="date" value="<%= v('joinDate') %>"></div>
+    </div>
+  </section>
+
+  <%- include('../partials/accounts-form', { accounts: user.accounts || [], platforms, userId: user.id || '' }) %>
+
+  <% const hasManual = ['salesToday','unitsToday','balance','orders','returns','investment'].some(k => user[k] !== null && user[k] !== undefined && user[k] !== '') || (user.sales && Object.values(user.sales).some(s => s && s.length)) || !!user.channel; %>
+  <details class="manual-entry" <%= hasManual && !(user.accounts || []).some(a => a.status === 'synced') ? 'open' : '' %>>
+    <summary>
+      <span><b>Enter numbers manually</b><span class="s2">For anything the connected accounts don't provide — e.g. Amazon until API access is approved, or YouTube watch time and revenue.</span></span>
+      <%- icon('chevron') %>
+    </summary>
+
+  <section class="card form-card">
+    <div class="section-title" style="margin-bottom:16px">Numbers</div>
+    <div class="form-grid">
+      <div class="field"><label for="salesToday">Sales today (USD)</label><input id="salesToday" name="salesToday" type="number" step="0.01" min="0" inputmode="decimal" value="<%= v('salesToday') %>"></div>
+      <div class="field"><label for="unitsToday">Units today</label><input id="unitsToday" name="unitsToday" type="number" min="0" inputmode="numeric" value="<%= v('unitsToday') %>"></div>
+      <div class="field"><label for="balance">Current balance (USD)</label><input id="balance" name="balance" type="number" step="0.01" inputmode="decimal" value="<%= v('balance') %>"></div>
+      <div class="field"><label for="nextPayment">Next payment</label><input id="nextPayment" name="nextPayment" type="date" value="<%= v('nextPayment') %>"></div>
+      <div class="field"><label for="orders">Orders</label><input id="orders" name="orders" type="number" min="0" inputmode="numeric" value="<%= v('orders') %>"></div>
+      <div class="field"><label for="returns">Returns</label><input id="returns" name="returns" type="number" min="0" inputmode="numeric" value="<%= v('returns') %>"></div>
+      <div class="field"><label for="communications">Communications</label><input id="communications" name="communications" type="number" min="0" inputmode="numeric" value="<%= v('communications') %>"></div>
+      <div class="field"><label for="investment">Investment (USD)</label><input id="investment" name="investment" type="number" step="0.01" min="0" inputmode="decimal" value="<%= v('investment') %>"></div>
+    </div>
+  </section>
+
+  <section class="card form-card">
+    <div class="section-title">Product sales chart</div>
+    <div class="cap" style="margin-bottom:16px;color:var(--muted)">One bar per line, written as <code>label, amount</code>. Totals are worked out automatically if you leave them blank.</div>
+    <div class="form-grid c3">
+      <div class="field"><label for="salesWeek">This week</label><textarea id="salesWeek" name="salesWeek" placeholder="Mon, 1200&#10;Tue, 980"><%= h.seriesToText(sales.week) %></textarea><div class="hint" data-count="salesWeek"></div></div>
+      <div class="field"><label for="salesMonth">Last 30 days</label><textarea id="salesMonth" name="salesMonth" placeholder="Aug 4, 4700&#10;Aug 5, 3900"><%= h.seriesToText(sales.month) %></textarea><div class="hint" data-count="salesMonth"></div></div>
+      <div class="field"><label for="salesYear">Last 12 months</label><textarea id="salesYear" name="salesYear" placeholder="Jan, 18500&#10;Feb, 21000"><%= h.seriesToText(sales.year) %></textarea><div class="hint" data-count="salesYear"></div></div>
+      <div class="field"><label for="totalWeek">Total for this week (USD)</label><input id="totalWeek" name="totalWeek" type="number" step="0.01" value="<%= nv(totals.week) %>" data-total="salesWeek"></div>
+      <div class="field"><label for="totalMonth">Total for last 30 days (USD)</label><input id="totalMonth" name="totalMonth" type="number" step="0.01" value="<%= nv(totals.month) %>" data-total="salesMonth"></div>
+      <div class="field"><label for="totalYear">Total for last 12 months (USD)</label><input id="totalYear" name="totalYear" type="number" step="0.01" value="<%= nv(totals.year) %>" data-total="salesYear"></div>
+      <div class="field"><label for="changeWeek">Change vs previous period (%)</label><input id="changeWeek" name="changeWeek" type="number" step="0.1" value="<%= nv(change.week) %>"></div>
+      <div class="field"><label for="changeMonth">Change vs previous period (%)</label><input id="changeMonth" name="changeMonth" type="number" step="0.1" value="<%= nv(change.month) %>"></div>
+      <div class="field"><label for="changeYear">Change vs previous period (%)</label><input id="changeYear" name="changeYear" type="number" step="0.1" value="<%= nv(change.year) %>"></div>
+    </div>
+  </section>
+
+  <% const ch = user.channel || {}; %>
+  <section class="card form-card">
+    <div class="section-title svc-label"><img class="brand-mini" src="<%= base %>/img/brands/youtube.svg" alt="">YouTube channel · last 28 days</div>
+    <div class="cap" style="margin-bottom:16px;color:var(--muted)">For YouTube Automation clients. Leave blank for other services. Daily views use one line per day as <code>label, views</code>.</div>
+    <div class="form-grid">
+      <div class="field"><label for="chViews">Views</label><input id="chViews" name="chViews" type="number" min="0" inputmode="numeric" value="<%= nv(ch.views) %>" placeholder="Adds up the daily views if blank"></div>
+      <div class="field"><label for="chWatch">Watch time (hours)</label><input id="chWatch" name="chWatch" type="number" min="0" step="0.1" value="<%= nv(ch.watchHours) %>"></div>
+      <div class="field"><label for="chSubs">Subscribers gained</label><input id="chSubs" name="chSubs" type="number" step="1" value="<%= nv(ch.subscribers) %>"></div>
+      <div class="field"><label for="chComments">New comments</label><input id="chComments" name="chComments" type="number" min="0" value="<%= nv(ch.comments) %>"></div>
+    </div>
+    <div class="form-grid" style="margin-top:18px">
+      <div class="field"><label for="chTotalSubs">Total subscribers</label><input id="chTotalSubs" name="chTotalSubs" type="number" min="0" value="<%= nv(ch.totalSubscribers) %>"></div>
+      <div class="field"><label for="chCtr">Impressions CTR (%)</label><input id="chCtr" name="chCtr" type="number" min="0" max="100" step="0.1" value="<%= nv(ch.ctr) %>"></div>
+      <div class="field"><label for="chMonetization">Partner Program</label><div class="select" style="width:100%"><select id="chMonetization" name="chMonetization">
+        <option value="">Not set</option>
+        <% monetizations.forEach(m => { %><option <%= ch.monetization === m ? 'selected' : '' %>><%= m %></option><% }) %>
+      </select></div></div>
+    </div>
+    <div class="form-grid c2" style="margin-top:18px">
+      <div class="field"><label for="chDaily">Daily views</label><textarea id="chDaily" name="chDaily" placeholder="Sep 13, 1190&#10;Sep 14, 1520"><%= h.seriesToText(ch.daily) %></textarea></div>
+      <div class="field"><label for="chUploads">Recent uploads</label><textarea id="chUploads" name="chUploads" placeholder="Video title | 2026-10-02 | 48200 | 12:34 | Published&#10;Next video title | 2026-10-14 |  | 10:05 | Scheduled"><%= uploadsToText(ch.uploads) %></textarea><div class="hint">One per line: title | date | views | length | Published, Scheduled or Private</div></div>
+    </div>
+    <div class="hint" style="margin-top:10px">Ad revenue goes in the sales chart above (one line per day, in USD). Sponsorships and memberships are added on the Orders page and show as brand deals.</div>
+  </section>
+
+  </details>
+
+  <div class="form-actions">
+    <a href="<%= base + (isEdit ? '/users/' + user.id : '/users') %>" class="btn">Cancel</a>
+    <button type="submit" class="btn btn-red"><%= isEdit ? 'Save changes' : 'Save user' %></button>
+  </div>
+</form>
+
+<datalist id="countries">
+  <% ['United States','Canada','United Kingdom','Australia','Germany','France','United Arab Emirates','Pakistan','India','Saudi Arabia','Netherlands','Spain','Italy'].forEach(c => { %><option value="<%= c %>"><% }) %>
+</datalist>
+
+<script>
+(() => {
+  // live "N bars · total $X" hint under each sales textarea, used as the total placeholder
+  const parse = t => t.split(/\n/).map(l => { const i = l.lastIndexOf(','); return i < 0 ? null : Number(l.slice(i + 1).replace(/[$\s,]/g, '')); }).filter(n => Number.isFinite(n));
+  document.querySelectorAll('[data-count]').forEach(hint => {
+    const ta = document.getElementById(hint.dataset.count);
+    const total = document.querySelector(`[data-total="${ta.id}"]`);
+    const upd = () => {
+      const nums = parse(ta.value);
+      const sum = nums.reduce((a, b) => a + b, 0);
+      hint.textContent = nums.length ? `${nums.length} bar${nums.length > 1 ? 's' : ''} · adds up to $${sum.toLocaleString('en-US')}` : '';
+      total.placeholder = nums.length ? sum.toLocaleString('en-US', { useGrouping: false }) : '';
+    };
+    ta.addEventListener('input', upd); upd();
+  });
+  // warn before leaving with unsaved edits
+  const form = document.querySelector('form[method=post]:not([data-confirm])');
+  let dirty = false;
+  form.addEventListener('input', () => (dirty = true));
+  form.addEventListener('submit', () => (dirty = false));
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>
+<%- include('../partials/foot') %>

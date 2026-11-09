@@ -1,0 +1,102 @@
+<%- include('../partials/head') %>
+<div class="head">
+  <div>
+    <h1>Users</h1>
+    <div class="sub"><span id="shown"><%= users.length %></span> of <%= users.length %> shown. Select a user to open the full profile.</div>
+  </div>
+  <div class="actions">
+    <div class="select"><select id="f-service" aria-label="Filter by service category">
+      <option value="">All services</option>
+      <% categories.forEach(c => { %><option value="cat:<%= c %>" <%= !serviceFilter && category === c ? 'selected' : '' %>><%= c %></option><% }) %>
+      <% if (serviceFilter) { %><option value="id:<%= serviceFilter.id %>" selected><%= serviceFilter.label %></option><% } %>
+    </select></div>
+    <div class="select"><select id="f-status" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <% statuses.forEach(s => { %><option <%= status === s ? 'selected' : '' %>><%= s %></option><% }) %>
+    </select></div>
+    <a href="<%= base %>/users/export.csv" class="btn btn-sm" style="height:44px" title="Download all users as CSV"><%- icon('download') %>Export</a>
+  </div>
+</div>
+
+<div class="card" style="padding:10px 22px 14px">
+  <div class="table-wrap">
+    <table id="users-table">
+      <thead><tr><th>Client ID</th><th>Service</th><th>Status</th><th class="r">Sales today</th><th class="r">Balance</th><th class="r">Orders</th><th style="width:20px"></th></tr></thead>
+      <tbody>
+        <% users.forEach(u => { %>
+          <tr class="clickable" tabindex="0" data-href="<%= base %>/users/<%= u.id %>"
+              data-id="<%= u.id %>" data-search="<%= [u.clientId, u.category, u.country, u.status].join(' ').toLowerCase() %>"
+              data-service="<%= u.serviceId %>" data-category="<%= u.category %>" data-status="<%= u.status %>">
+            <td><div class="b client-id"><%= u.clientId %></div><span class="s2"><%= h.ANON_SUB %></span></td>
+            <td><% const logo = h.serviceLogo(u.serviceId), ci = h.categoryIcon(u.category); %><span class="svc-cat"><% if (logo) { %><span class="brand-tile sm"><img src="<%= base %>/img/brands/<%= logo %>.svg" alt=""></span><% } else { %><span class="ic sm <%= ci[1] %>"><%- icon(ci[0]) %></span><% } %><%= u.category %></span></td>
+            <td><span class="pill <%= h.pill(u.status) %>"><%= u.status %></span></td>
+            <td class="r"><%= h.money(u.salesToday) %></td>
+            <td class="r"><%= h.money(u.balance) %></td>
+            <td class="r"><%= h.num(u.orders) %></td>
+            <td class="r"><span class="row-arrow"><%- icon('right') %></span></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <div class="empty-state" id="no-results" style="<%= users.length ? 'display:none' : '' %>">
+    <div class="ic red"><%- icon('search') %></div>
+    <h4><%= users.length ? 'No users match your filters' : 'No users yet' %></h4>
+    <p><%= users.length ? 'Try a different search or clear the filters.' : 'Add your first user to get started.' %></p>
+    <% if (users.length) { %><button class="btn btn-sm" style="margin-top:14px" id="reset-filters">Clear filters</button>
+    <% } else { %><a class="btn btn-red btn-sm" style="margin-top:14px" href="<%= base %>/users/new"><%- icon('plus') %>Add user</a><% } %>
+  </div>
+</div>
+
+<script>
+(() => {
+  const rows = [...document.querySelectorAll('#users-table tbody tr')];
+  const q = document.getElementById('q');
+  const svc = document.getElementById('f-service');
+  const st = document.getElementById('f-status');
+  const shown = document.getElementById('shown');
+  const empty = document.getElementById('no-results');
+  const table = document.getElementById('users-table');
+  // names/stores/emails are matched on the server, so they never appear in this page
+  let serverIds = null, pending = 0, timer;
+  async function lookup(term) {
+    const n = ++pending;
+    try { const r = await fetch('<%= base %>/api/search?ids=1&q=' + encodeURIComponent(term)); if (n === pending) { serverIds = new Set(await r.json()); apply(true); } } catch {}
+  }
+  function matchesFilter(r) {
+    const v = svc.value;
+    if (!v) return true;
+    return v.startsWith('cat:') ? r.dataset.category === v.slice(4) : r.dataset.service === v.slice(3);
+  }
+  function apply(fromServer) {
+    const term = (q.value || '').trim().toLowerCase();
+    if (fromServer !== true) { serverIds = null; clearTimeout(timer); if (term) timer = setTimeout(() => lookup(term), 150); }
+    let n = 0;
+    rows.forEach(r => {
+      const hit = !term || r.dataset.search.includes(term) || (serverIds && serverIds.has(r.dataset.id));
+      const ok = hit && matchesFilter(r) && (!st.value || r.dataset.status === st.value);
+      r.style.display = ok ? '' : 'none';
+      if (ok) n++;
+    });
+    shown.textContent = n;
+    if (rows.length) { empty.style.display = n ? 'none' : ''; table.style.display = n ? '' : 'none'; }
+    const p = new URLSearchParams();
+    if (term) p.set('q', q.value.trim());
+    if (svc.value.startsWith('cat:')) p.set('category', svc.value.slice(4));
+    if (svc.value.startsWith('id:')) p.set('service', svc.value.slice(3));
+    if (st.value) p.set('status', st.value);
+    history.replaceState(null, '', '<%= base %>/users' + (p.toString() ? '?' + p : ''));
+  }
+  document.addEventListener('search:input', apply);
+  svc.addEventListener('change', apply);
+  st.addEventListener('change', apply);
+  document.getElementById('reset-filters')?.addEventListener('click', () => {
+    q.value = ''; svc.value = ''; st.value = ''; q.dispatchEvent(new Event('input'));
+    q.closest('form').classList.remove('has-value'); apply();
+  });
+  // Enter in the search box filters here instead of reloading
+  q.closest('form').addEventListener('submit', e => { e.preventDefault(); apply(); });
+  apply();
+})();
+</script>
+<%- include('../partials/foot') %>

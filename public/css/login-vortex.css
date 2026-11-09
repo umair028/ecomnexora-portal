@@ -1,0 +1,124 @@
+/* ===== Sign-in page "vortex": a turning vortex of glowing screens (js/login-vortex.js) ===== */
+.lv-body{background:#030203}
+.lv{position:relative;min-height:100vh;min-height:100svh;width:100%;color:#fff;font-family:var(--font);display:flex;flex-direction:column;overflow-x:hidden;
+  /* first paint / no WebGL: a still of the scene */
+  background:
+    radial-gradient(ellipse 30% 24% at 50% 42%,rgba(255,59,48,.45),transparent 70%),
+    radial-gradient(ellipse 60% 50% at 50% 38%,rgba(255,122,61,.14),transparent 70%),
+    linear-gradient(180deg,#0b0607 0%,#050304 62%,#0c0606 70%,#030203 100%)}
+.lv ::selection{background:rgba(255,49,49,.38);color:#fff}
+.lv-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.6s ease}
+.lv-canvas.on{opacity:1}
+.lv-shade{position:fixed;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(3,2,3,.7) 0%,rgba(3,2,3,0) 18%,rgba(3,2,3,0) 66%,rgba(3,2,3,.78) 100%),
+             radial-gradient(ellipse 60% 70% at 0% 100%,rgba(3,2,3,.6),transparent 70%)}
+
+/* nav */
+.lv-nav{position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;height:84px;animation:lvFade 1s ease both}
+.lv-logo img{height:36px;display:block;transition:opacity .2s,transform .3s var(--ease)}
+.lv-logo:hover img{opacity:.85;transform:scale(1.03)}
+.lv-nav-right{display:flex;align-items:center;gap:10px}
+
+/* buttons: the website's shape (8px corners, Montserrat bold, scale on hover) */
+.lv-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;font-family:var(--font-ui);font-weight:700;font-size:14px;white-space:nowrap;color:#fff;
+  border:1px solid transparent;transition:transform .2s var(--ease),box-shadow .2s,background .2s,color .2s,border-color .2s}
+.lv-btn .i{width:15px;height:15px}
+.lv-btn:hover{transform:scale(1.05)}
+.lv-btn-ghost{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.lv-btn-ghost:hover{background:#fff;color:#231f20;border-color:#fff}
+.lv-btn-red{background:#ff3131}
+.lv-btn-red:hover{background:#ef2323;box-shadow:0 10px 26px -6px rgba(255,49,49,.65)}
+
+/* layout: phones/tablets stack stage, card, facts */
+.lv-main{position:relative;z-index:10;flex:1;display:grid;grid-template-columns:minmax(0,1fr);gap:36px;padding:28px 20px 40px}
+
+/* left column: eyebrow + thin, letter-spaced headline (the vortex stays centred behind) */
+.lv-stage{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0}
+.lv-eyebrow{font-family:var(--font-ui);font-weight:600;font-size:11px;letter-spacing:.38em;text-transform:uppercase;color:rgba(255,255,255,.72);
+  margin-bottom:18px;text-shadow:0 0 12px rgba(0,0,0,.95),0 0 4px rgba(0,0,0,.9);animation:lvUp 1s var(--ease) .2s both}
+.lv-eyebrow span{color:#ff3131;margin:0 .3em}
+.lv-title{margin:0;font-family:var(--font);font-weight:200;font-size:clamp(26px,7.4vw,40px);line-height:1.18;letter-spacing:.16em;text-transform:uppercase;color:#fff;
+  text-shadow:0 0 24px rgba(0,0,0,.85),0 2px 30px rgba(0,0,0,.6)}
+.lv-title span,.lv-title em{display:block;animation:lvLetter 1.4s var(--ease) both;animation-delay:calc(.35s + var(--i) * .15s)}
+.lv-title em{font-style:normal;font-weight:300;color:#ff3131;
+  filter:drop-shadow(0 4px 22px rgba(255,49,49,.35))}
+
+/* glass sign-in card */
+.lv-card-wrap{display:flex;justify-content:center;min-width:0;animation:lvUp 1s var(--ease) .6s both}
+.lv-card{position:relative;width:100%;max-width:430px;padding:30px;border-radius:22px;
+  background:linear-gradient(160deg,rgba(24,17,19,.62),rgba(8,6,7,.5));border:1px solid rgba(255,255,255,.13);
+  backdrop-filter:blur(22px) saturate(1.25);-webkit-backdrop-filter:blur(22px) saturate(1.25);
+  box-shadow:0 40px 100px -30px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.08)}
+.lv-card::before{content:"";position:absolute;left:24px;right:24px;top:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,120,90,.8),transparent)}
+.lv-card h2{font-family:var(--font);font-weight:600;font-size:28px;letter-spacing:-.6px;line-height:1.15;color:#fff}
+.lv-card-sub{color:rgba(255,255,255,.6);font-size:14.5px;margin-top:6px}
+.lv-field{margin-top:18px}
+.lv-field label{display:block;font-size:13px;font-weight:500;color:rgba(255,255,255,.74);margin-bottom:8px}
+.lv-label-row{display:flex;justify-content:space-between;align-items:baseline}
+.lv-label-row a,.lv-foot a{color:#ff4d4d;font-weight:600;font-size:13px;transition:color .15s}
+.lv-label-row a:hover,.lv-foot a:hover{color:#ff8080;text-decoration:underline;text-underline-offset:3px}
+.lv-field input{width:100%;height:50px;border-radius:9px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.05);color:#fff;padding:0 16px;font-size:15px;
+  transition:border-color .2s,box-shadow .2s,background .2s}
+.lv-field .input-icon input{padding-right:48px}
+.lv-field input::placeholder{color:rgba(255,255,255,.34)}
+.lv-field input:hover{border-color:rgba(255,255,255,.25)}
+.lv-field input:focus{outline:none;border-color:#ff3131;background:rgba(255,255,255,.07);box-shadow:0 0 0 4px rgba(255,49,49,.18)}
+.lv-field input:-webkit-autofill{-webkit-text-fill-color:#fff;-webkit-box-shadow:0 0 0 40px #1f1617 inset;caret-color:#fff}
+.lv-field .input-icon button{color:rgba(255,255,255,.5)}
+.lv-field .input-icon button:hover{background:rgba(255,255,255,.08);color:#fff}
+.lv-check{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:14px;color:rgba(255,255,255,.7);cursor:pointer;user-select:none}
+.lv-check input{width:18px;height:18px;accent-color:#ff3131;cursor:pointer}
+.lv-submit{position:relative;overflow:hidden;width:100%;height:50px;margin-top:22px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:#ff3131;color:#fff;font-family:var(--font-ui);font-weight:700;font-size:15px;cursor:pointer;
+  box-shadow:0 14px 34px -12px rgba(255,49,49,.85);transition:transform .2s var(--ease),box-shadow .25s,background .2s}
+.lv-submit::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.25) 50%,transparent 65%);transform:translateX(-120%);animation:lvSweep 4.5s ease-in-out 2s infinite}
+.lv-submit:hover{transform:translateY(-1px);background:#ef2323;box-shadow:0 18px 40px -12px rgba(255,49,49,.95)}
+.lv-submit .i{width:17px;height:17px;transition:transform .2s}
+.lv-submit:hover .i{transform:translateX(3px)}
+.lv-alert{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.5;background:rgba(255,49,49,.14);border:1px solid rgba(255,49,49,.35);color:#ffd0d0}
+.lv-alert .i{color:#ff6b6b;margin-top:1px;flex-shrink:0}
+.lv-foot{text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,.5)}
+
+/* bottom-left list, with a vertical label like the reference */
+.lv-facts{display:flex;align-items:flex-end;gap:16px;animation:lvUp 1s var(--ease) .9s both}
+.lv-facts-label{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--font-ui);font-weight:600;font-size:10.5px;letter-spacing:.38em;text-transform:uppercase;color:rgba(255,255,255,.62);white-space:nowrap}
+.lv-facts ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.lv-facts li{font-family:var(--font-ui);font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);line-height:1.4}
+.lv-facts li::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff3131;margin-right:10px;vertical-align:middle;box-shadow:0 0 8px rgba(255,49,49,.8)}
+
+@keyframes lvUp{from{opacity:0;transform:translateY(20px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes lvFade{from{opacity:0}to{opacity:1}}
+@keyframes lvLetter{from{opacity:0;transform:translateY(.25em);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes lvSweep{0%{transform:translateX(-120%)}40%,100%{transform:translateX(120%)}}
+
+@media (max-width:520px){
+  .lv-hide-sm{display:none}
+  .lv-btn{padding:9px 15px;font-size:13px}
+  .lv-logo img{height:30px}
+  .lv-card{padding:24px 20px;border-radius:18px}
+  .lv-facts li{font-size:10px}
+  .lv-eyebrow{font-size:10px;letter-spacing:.24em}
+}
+@media (min-width:768px){
+  .lv-nav{padding:20px 44px;height:92px}
+  .lv-main{padding:32px 44px 44px}
+  .lv-title{font-size:clamp(34px,5.4vw,46px)}
+}
+@media (min-width:1024px){
+  .lv{height:100vh;height:100svh;overflow:hidden}
+  .lv-main{grid-template-columns:minmax(0,1fr) 430px;grid-template-rows:1fr auto;grid-template-areas:"stage card" "facts card";gap:28px 56px;padding:0 56px 40px}
+  /* keep the headline and list clear of the figure in the middle of the screen */
+  .lv-stage{grid-area:stage;max-width:min(600px,calc(50vw - 56px - 110px));padding-bottom:6vh}
+  .lv-card-wrap{grid-area:card;align-items:center;justify-content:flex-end}
+  .lv-facts{grid-area:facts}
+  .lv-title{font-size:clamp(26px,min(2.6vw,5.4vh),48px)}
+  .lv-eyebrow{font-size:12px;margin-bottom:22px}
+  .lv-facts{max-width:calc(50vw - 56px - 110px)}
+}
+@media (max-width:1023px){
+  /* the vortex sits right behind the card here, so the glass is more solid */
+  .lv-card{background:linear-gradient(160deg,rgba(24,17,19,.84),rgba(8,6,7,.78))}
+}
+@media (prefers-reduced-motion:reduce){
+  .lv *,.lv *::before,.lv *::after{animation:none!important}
+}

@@ -1,0 +1,135 @@
+<%- include('../partials/head') %>
+<%
+  const labels = { week: 'This week', month: 'Last 30 days', year: 'Last 12 months' };
+  const ranges = ['week', 'month', 'year'];
+  const data = Object.fromEntries(ranges.map(r => [r, {
+    points: (user.sales && user.sales[r]) || [],
+    total: user.totals && user.totals[r],
+    change: user.change && user.change[r],
+  }]));
+  const dueIn = h.daysUntil(user.nextPayment);
+%>
+<div class="head" style="margin-bottom:14px">
+  <a href="<%= base %>/users" class="btn btn-sm"><%- icon('left') %>Back to users</a>
+  <div class="actions no-print">
+    <a href="<%= base %>/messages?u=<%= user.id %>" class="btn btn-sm"><%- icon('message') %>Message</a>
+    <% if ((user.accounts || []).length) { %><form method="post" action="<%= base %>/users/<%= user.id %>/sync"><button type="submit" class="btn btn-sm" title="Fetch the latest numbers from the connected accounts"><%- icon('return') %>Sync now</button></form><% } %>
+    <button type="button" class="btn btn-sm" onclick="window.print()"><%- icon('printer') %>Print</button>
+    <a href="<%= base %>/users/<%= user.id %>/edit" class="btn btn-sm"><%- icon('edit') %>Edit</a>
+    <form method="post" action="<%= base %>/users/<%= user.id %>/delete" data-confirm="This permanently removes <%= h.clientLabel(user) %> and their messages. Orders and payments are kept for your records." data-confirm-title="Delete <%= h.clientLabel(user) %>?" data-confirm-ok="Delete user">
+      <button type="submit" class="btn btn-sm btn-danger"><%- icon('trash') %>Delete</button>
+    </form>
+  </div>
+</div>
+
+<div style="margin-bottom:22px">
+  <%# privacy: identified by Client ID only; name, store and channel stay in the data for internal use %>
+  <h1><%= h.clientRef(user) %> <span class="pill <%= h.pill(user.status) %>"><%= user.status %></span></h1>
+  <div class="sub"><%= h.serviceCategory(user.serviceId) %> · Managed Account</div>
+</div>
+
+<% if (isChannel) { %>
+<%- include('../partials/channel-profile', { ranges, labels, range }) %>
+<% } else { %>
+<div class="grid g4 mb">
+  <div class="card kpi"><div class="lbl"><span class="ic green"><%- icon('cart') %></span>Sales today</div><div class="val"><%= h.money(user.salesToday) %></div></div>
+  <div class="card kpi"><div class="lbl"><span class="ic green"><%- icon('box') %></span>Units today</div><div class="val"><%= h.num(user.unitsToday) %></div></div>
+  <div class="card kpi"><div class="lbl"><span class="ic red"><%- icon('dollar') %></span>Current balance</div><div class="val"><%= h.compact(user.balance) %></div></div>
+  <div class="card kpi"><div class="lbl"><span class="ic red"><%- icon('calendar') %></span>Next payment</div><div class="val"><%= user.nextPayment ? h.shortDate(user.nextPayment) : '—' %></div>
+    <% if (dueIn !== null) { %><div class="delta"><%- dueIn < 0 ? `<span class="down">${-dueIn} day${dueIn === -1 ? '' : 's'} overdue</span>` : dueIn === 0 ? '<span class="up">Due today</span>' : `In ${dueIn} day${dueIn === 1 ? '' : 's'}` %></div><% } %>
+  </div>
+</div>
+
+<div class="grid split mb">
+  <div class="card">
+    <div class="card-head">
+      <div><h3>Revenue trend</h3><div class="cap" id="trend-summary"></div></div>
+      <div class="select sm no-print"><select id="trend-range" aria-label="Revenue trend range">
+        <% ranges.forEach(r => { %><option value="<%= r %>" <%= range === r ? 'selected' : '' %>><%= labels[r] %></option><% }) %>
+      </select></div>
+    </div>
+    <div id="trend-chart"></div>
+  </div>
+  <div class="card" style="height:100%">
+    <div class="card-head" style="margin-bottom:0"><h3>Activity</h3></div>
+    <div class="kv big"><span>Orders</span><span class="v"><%= h.num(user.orders) %></span></div>
+    <div class="kv big"><span>Returns</span><span class="v"><%= h.num(user.returns) %></span></div>
+    <div class="kv big"><span>Communications</span><span class="v"><%= h.num(user.communications) %></span></div>
+    <div class="kv big"><span>Investment</span><span class="v"><%= h.money(user.investment) %></span></div>
+  </div>
+</div>
+
+<div class="grid split mb">
+  <div class="card">
+    <div class="card-head">
+      <div><h3>Product sales</h3><div class="cap" id="bars-summary"></div></div>
+      <div class="tabs no-print" id="bars-tabs" role="tablist">
+        <% ranges.forEach(r => { %><button type="button" role="tab" data-range="<%= r %>" class="<%= range === r ? 'on' : '' %>"><%= labels[r] %></button><% }) %>
+      </div>
+    </div>
+    <div id="bars-chart"></div>
+  </div>
+  <div class="card" style="height:100%">
+    <div class="card-head" style="margin-bottom:0"><h3>Contact</h3></div>
+    <div class="kv"><span>Email</span><span class="muted"><%= user.email ? 'Hidden for privacy' : '—' %></span></div>
+    <div class="kv"><span>Phone</span><% if (user.phone) { %><a href="tel:<%= user.phone.replace(/[^\d+]/g, '') %>" style="text-decoration:none;color:var(--ink)"><%= user.phone %></a><% } else { %><span>—</span><% } %></div>
+    <div class="kv"><span>Country</span><span><%= user.country || '—' %></span></div>
+    <div class="kv"><span>Store link</span><span class="muted"><%= user.storeLink ? 'Hidden for privacy' : '—' %></span></div>
+    <%- include('../partials/data-source') %>
+  </div>
+</div>
+
+<div class="card" style="padding:18px 22px">
+  <div class="card-head"><h3>Recent orders</h3><a class="link" style="font-size:14px" href="<%= base %>/orders?user=<%= user.id %>">View all orders</a></div>
+  <% if (recentOrders.length) { %>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Order</th><th>Product</th><th>Date</th><th>Status</th><th class="r">Units</th><th class="r">Amount</th></tr></thead>
+    <tbody>
+      <% recentOrders.forEach(o => { %>
+        <tr><td class="b">#<%= o.number %></td><td><%= o.product %></td><td class="muted"><%= h.longDate(o.date) %></td><td><span class="pill <%= h.pill(o.status) %>"><%= o.status %></span></td><td class="r"><%= o.units %></td><td class="r b"><%= h.money(o.amount, { cents: true }) %></td></tr>
+      <% }) %>
+    </tbody>
+  </table></div>
+  <% } else { %><div class="empty-state" style="padding:28px"><p>No orders recorded for this user yet.</p></div><% } %>
+</div>
+<% } %>
+
+<script>
+(() => {
+  if (!document.getElementById('bars-chart')) return;
+  const data = <%- JSON.stringify(data).replace(/</g, '\\u003c') %>;
+  const labels = <%- JSON.stringify(labels) %>;
+  const what = <%- JSON.stringify(isChannel ? 'revenue' : 'sales') %>;
+  const fmt = v => '$' + (v >= 1000 ? +(v / 1000).toFixed(1) + 'K' : Math.round(v).toLocaleString('en-US'));
+  const summary = r => {
+    const d = data[r];
+    const total = d.total ?? d.points.reduce((a, p) => a + Number(p.amount || 0), 0);
+    if (!d.points.length && !total) return `No ${what} entered for this period.`;
+    const ch = d.change;
+    const chHtml = ch === null || ch === undefined ? '' : ` <span class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '↑' : '↓'} ${Math.abs(ch)}%</span> vs previous period`;
+    return `<b style="color:var(--ink);font-size:15px">${fmt(total)}</b>${chHtml}`;
+  };
+  const periods = { week: 'this week', month: 'the last 30 days', year: 'the last 12 months' };
+  // days entered but all $0 (e.g. an inactive store) is "no sales", not missing data
+  const empty = r => data[r].points.length
+    ? `<span class="ic red" style="margin:0 auto 10px"><%- icon('chart') %></span>No ${what} in ${periods[r]}.`
+    : `<span class="ic red" style="margin:0 auto 10px"><%- icon('chart') %></span>No ${what} entered for ${periods[r]} yet.<br><a class="link" href="<%= base %>/users/<%= user.id %>/edit">Add it on the Edit page</a>`;
+  const trendEl = document.getElementById('trend-chart');
+  function drawTrend(r, animate = true) {
+    if (!trendEl) return;
+    document.getElementById('trend-summary').innerHTML = summary(r);
+    Charts.line(trendEl, { points: data[r].points, height: 300, empty: empty(r), animate });
+  }
+  function drawBars(r, animate = true) {
+    document.getElementById('bars-summary').innerHTML = summary(r);
+    document.querySelectorAll('#bars-tabs button').forEach(b => b.classList.toggle('on', b.dataset.range === r));
+    Charts.bar(document.getElementById('bars-chart'), { points: data[r].points, height: 300, average: true, barWidth: 44, empty: empty(r), animate });
+  }
+  let tr = '<%= range %>', br = '<%= range %>';
+  document.getElementById('trend-range')?.addEventListener('change', e => drawTrend(tr = e.target.value));
+  document.getElementById('bars-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) drawBars(br = b.dataset.range); });
+  window.addEventListener('DOMContentLoaded', () => { drawTrend(tr); drawBars(br); });
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { drawTrend(tr, false); drawBars(br, false); }, 150); });
+})();
+</script>
+<%- include('../partials/foot') %>

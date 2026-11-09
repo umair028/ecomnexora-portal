@@ -1,0 +1,22 @@
+<%- include('../partials/auth-start', { title: 'Sign in' }) %>
+      <form class="lp-card" method="post" action="<%= base %>/login" novalidate>
+        <h2>Welcome back</h2>
+        <p class="lp-card-sub">Sign in to the Ecom Nexora admin portal.</p>
+        <% if (error) { %><div class="lp-alert" role="alert"><%- icon('alert') %><span><%= error %></span></div><% } %>
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="lp-field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username" placeholder="you@company.com" value="<%= email %>" required <%= email ? '' : 'autofocus' %>>
+        </div>
+        <div class="lp-field">
+          <div class="lp-label-row"><label for="password">Password</label><a href="<%= base %>/forgot-password">Forgot password?</a></div>
+          <div class="input-icon">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required <%= email ? 'autofocus' : '' %>>
+            <button type="button" data-reveal aria-label="Show password"><%- icon('eye') %></button>
+          </div>
+        </div>
+        <label class="lp-check"><input type="checkbox" name="remember" checked> Keep me signed in for 30 days</label>
+        <button class="btn btn-red btn-block lp-submit" type="submit">Sign in <%- icon('right') %></button>
+        <p class="lp-foot">Protected portal · Need access? <a href="mailto:hello@ecomnexora.com">Contact your admin</a></p>
+      </form>
+<%- include('../partials/auth-end') %>

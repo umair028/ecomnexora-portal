@@ -1,0 +1,12 @@
+<%# Where this client's numbers come from (platform + sync state; never the link or account name) %>
+<% const PNAMES = { youtube: 'YouTube', shopify: 'Shopify', amazon: 'Amazon', walmart: 'Walmart', tiktok: 'TikTok Shop', facebook: 'Facebook Marketplace' }; %>
+<div class="kv"><span>Data source</span><span style="text-align:right">
+  <% if ((user.accounts || []).length) { %>
+    <% user.accounts.forEach(a => { %>
+      <span style="display:block;font-size:13.5px"><%= PNAMES[a.platform] || 'Unknown platform' %> ·
+        <% if (a.status === 'synced') { %><span class="up">synced <%= h.timeAgo(a.lastSync) %></span>
+        <% } else if (a.status === 'error') { %><span class="down">sync failed</span>
+        <% } else { %><span class="muted">waiting for API access</span><% } %></span>
+    <% }) %>
+  <% } else { %><span class="muted">Entered manually</span><% } %>
+</span></div>

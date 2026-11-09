@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · Ecom Nexora</title>
+  <link rel="icon" href="<%= base %>/img/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<%= base %>/css/app.css?v=<%= v %>">
+</head>
+<body class="lp-body">
+<div class="lp">
+  <% if (loginVideo) { %>
+    <video class="lp-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
+      <source src="<%= loginVideo %>" type="video/mp4">
+    </video>
+  <% } %>
+  <div class="lp-shade" aria-hidden="true"></div>
+
+  <header class="lp-nav">
+    <div class="lp-nav-left">
+      <a href="<%= site %>/" class="lp-logo" aria-label="Ecom Nexora website"><img src="<%= base %>/img/logo-white.png" alt="Ecom Nexora"></a>
+    </div>
+    <a class="lp-talk" href="tel:+14243940041"><%- icon('phone') %>Let's Talk</a>
+  </header>
+
+  <main class="lp-hero">
+    <div class="lp-copy">
+      <div>
+        <div class="lp-badge"><span></span>Ecom Nexora · Admin Portal</div>
+        <h1 class="lp-title">Every store, <br class="lp-br">every sale,<br><em>one dashboard.</em></h1>
+      </div>
+      <div class="lp-bottom">
+        <p class="lp-text">Track balances, sales and payouts for every Ecom Nexora client — automated stores on Amazon, Shopify, Walmart, TikTok and more.</p>
+        <a class="lp-cta" href="<%= site %>/">Visit ecomnexora.com <%- icon('right') %></a>
+      </div>
+    </div>
+    <div class="lp-card-wrap">

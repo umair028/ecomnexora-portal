@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050405">
+  <title><%= title %> · Ecom Nexora</title>
+  <link rel="icon" href="<%= base %>/img/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<%= base %>/css/app.css?v=<%= v %>">
+  <link rel="stylesheet" href="<%= base %>/css/login-new.css?v=<%= v %>">
+</head>
+<body class="ln-body">
+<div class="ln">
+  <!-- animated aurora + reflective water, drawn by js/login-new.js (static gradient if WebGL is unavailable) -->
+  <canvas class="ln-canvas" aria-hidden="true"></canvas>
+  <!-- the astronaut carrying a parcel (wide screens only): cut out of a green-screen video by js/login-new.js;
+       he walks in, then keeps walking in place on the drifting water. astronaut-last.png is his last frame,
+       already cut out, used with "reduce motion" or without WebGL. -->
+  <div class="ln-walk" aria-hidden="true">
+    <video class="ln-walk-video" data-src="<%= base %>/video/astronaut.mp4" data-still="<%= base %>/img/astronaut-last.png" data-logo="<%= base %>/img/logo-black.png" muted playsinline preload="none" tabindex="-1"></video>
+    <canvas class="ln-walk-canvas"></canvas>
+  </div>
+  <div class="ln-shade" aria-hidden="true"></div>
+  <div class="ln-grain" aria-hidden="true"></div>
+
+  <header class="ln-nav">
+    <a href="<%= site %>/" class="ln-logo" aria-label="Ecom Nexora website"><img src="<%= base %>/img/logo-white.png" alt="Ecom Nexora"></a>
+    <div class="ln-nav-right">
+      <a class="ln-pill ln-pill-ghost ln-hide-sm" href="<%= site %>/"><%- icon('globe') %>Website</a>
+      <a class="ln-pill ln-pill-red" href="tel:+14243940041"><%- icon('phone') %>Let's Talk</a>
+    </div>
+  </header>
+
+  <main class="ln-hero">
+    <section class="ln-copy">
+      <div class="ln-top">
+        <div class="ln-badge"><span class="ln-spark" aria-hidden="true"></span>Admin portal · Secure sign-in</div>
+        <h1 class="ln-title">Every store, every sale,<br><em>one dashboard.</em></h1>
+        <a class="ln-pill ln-pill-glass ln-cta" href="<%= site %>/">Visit ecomnexora.com <%- icon('right') %></a>
+      </div>
+      <div class="ln-bottom">
+        <p class="ln-text">Track balances, sales and payouts for every Ecom Nexora client — automated stores on Amazon, Shopify, Walmart, TikTok and more.</p>
+        <div class="ln-brands">
+          <div class="ln-chips" aria-hidden="true">
+            <% ['amazon', 'shopify', 'walmart', 'tiktok'].forEach(b => { %><span><img src="<%= base %>/img/brands/<%= b %>.svg" alt=""></span><% }) %>
+          </div>
+          <span>Every marketplace, one place.</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="ln-card-wrap">
+      <form class="ln-card" method="post" action="<%= base %><%= typeof formAction === 'string' ? formAction : '/login-new' %>" novalidate>
+        <h2>Welcome back</h2>
+        <p class="ln-card-sub">Sign in to the Ecom Nexora admin portal.</p>
+        <% if (error) { %><div class="ln-alert" role="alert"><%- icon('alert') %><span><%= error %></span></div><% } %>
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="ln-field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username" placeholder="you@company.com" value="<%= email %>" required <%= email ? '' : 'autofocus' %>>
+        </div>
+        <div class="ln-field">
+          <div class="ln-label-row"><label for="password">Password</label><a href="<%= base %>/forgot-password">Forgot password?</a></div>
+          <div class="input-icon">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required <%= email ? 'autofocus' : '' %>>
+            <button type="button" data-reveal aria-label="Show password"><%- icon('eye') %></button>
+          </div>
+        </div>
+        <label class="ln-check"><input type="checkbox" name="remember" checked><span>Keep me signed in for 30 days</span></label>
+        <button class="ln-submit" type="submit">Sign in <%- icon('right') %></button>
+        <p class="ln-foot">Need access? <a href="mailto:hello@ecomnexora.com">Contact your admin</a></p>
+      </form>
+    </div>
+  </main>
+</div>
+<div class="toasts" id="toasts"></div>
+<script src="<%= base %>/js/app.js?v=<%= v %>"></script>
+<script src="<%= base %>/js/login-new.js?v=<%= v %>"></script>
+</body>
+</html>

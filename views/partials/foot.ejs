@@ -1,0 +1,33 @@
+  </main>
+</div>
+
+<!-- Confirm dialog used by any form with data-confirm -->
+<div class="modal" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="box" style="max-width:440px">
+    <div class="mb" style="padding-top:24px">
+      <div class="danger-ic"><%- icon('alert') %></div>
+      <h3 id="confirm-title" style="font-size:18px;font-weight:600;margin-bottom:6px">Are you sure?</h3>
+      <p class="muted" id="confirm-text"></p>
+    </div>
+    <div class="mf">
+      <button type="button" class="btn btn-sm" data-close>Cancel</button>
+      <button type="button" class="btn btn-sm btn-red" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite">
+  <% if (flash) { %>
+    <div class="toast <%= flash.type === 'error' ? 'error' : '' %>" data-toast>
+      <span class="ti"><%- icon(flash.type === 'error' ? 'x' : 'check') %></span>
+      <span><%= flash.msg %></span>
+      <button type="button" aria-label="Dismiss" data-dismiss><%- icon('x') %></button>
+    </div>
+  <% } %>
+</div>
+
+<script src="<%= base %>/js/charts.js?v=<%= v %>"></script>
+<script src="<%= base %>/js/app.js?v=<%= v %>"></script>
+<% if (typeof scripts !== 'undefined') { %><%- scripts %><% } %>
+</body>
+</html>

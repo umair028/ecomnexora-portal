@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · Ecom Nexora</title>
+  <link rel="icon" href="<%= base %>/img/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<%= base %>/css/app.css?v=<%= v %>">
+  <script>window.BASE = <%- JSON.stringify(base) %>;</script>
+</head>
+<body>
+<%
+  const nav = [
+    ['dashboard', '/', 'dashboard', 'Dashboard'],
+    ['users', '/users', 'users', 'Users'],
+    ['add', '/users/new', 'plus', 'Add user'],
+    ['services', '/services', 'box', 'Services'],
+    ['orders', '/orders', 'cart', 'Orders'],
+    ['payments', '/payments', 'card', 'Payments'],
+    ['reports', '/reports', 'chart', 'Reports'],
+    ['messages', '/messages', 'message', 'Messages'],
+  ];
+%>
+<div class="app">
+  <aside class="side" id="sidebar" aria-label="Main navigation">
+    <div class="side-blobs" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span></div>
+    <a class="brand" href="<%= base %>/" aria-label="Ecom Nexora home"><img src="<%= base %>/img/logo-white.png" alt="Ecom Nexora"></a>
+    <nav class="nav">
+      <% nav.forEach(([key, href, ic, label]) => { %>
+        <a href="<%= base + href %>" class="<%= active === key ? 'on' : '' %>" <%- active === key ? 'aria-current="page"' : '' %>>
+          <%- icon(ic) %><%= label %>
+          <% if (key === 'messages' && typeof unread !== 'undefined' && unread) { %><span class="badge"><%= unread %></span><% } %>
+        </a>
+      <% }) %>
+    </nav>
+    <nav class="nav nav-bottom">
+      <a href="<%= base %>/settings" class="<%= active === 'settings' ? 'on' : '' %>"><%- icon('settings') %>Settings</a>
+      <a href="<%= base %>/help" class="<%= active === 'help' ? 'on' : '' %>"><%- icon('help') %>Help</a>
+      <a href="<%= site %>" target="_blank" rel="noopener" title="Open ecomnexora.com in a new tab"><%- icon('globe') %>Website<%- icon('external', 'ext') %></a>
+      <form method="post" action="<%= base %>/logout" data-confirm="Log out of the portal?" data-confirm-title="Log out" data-confirm-ok="Log out">
+        <button type="submit"><%- icon('logout') %>Log out</button>
+      </form>
+    </nav>
+  </aside>
+  <div class="scrim" data-close-nav></div>
+
+  <main class="main">
+    <div class="top">
+      <button class="icon-btn menu-btn" type="button" data-open-nav aria-label="Open menu"><%- icon('menu') %></button>
+      <form class="search" action="<%= base %>/users" method="get" role="search" autocomplete="off">
+        <div class="field">
+          <%- icon('search') %>
+          <label class="sr-only" for="q">Search users</label>
+          <input id="q" name="q" type="search" placeholder="Search by client ID, name, store, email or service"
+                 value="<%= typeof q !== 'undefined' && active === 'users' ? q : '' %>" data-search>
+          <span class="kbd">/</span>
+          <button type="button" class="clear" aria-label="Clear search" data-clear><%- icon('x') %></button>
+        </div>
+        <div class="results" role="listbox"></div>
+      </form>
+      <a href="<%= base %>/users/new" class="btn btn-red btn-add"><%- icon('plus') %><span>Add user</span></a>
+    </div>

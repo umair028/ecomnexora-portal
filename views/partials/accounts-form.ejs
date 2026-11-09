@@ -1,0 +1,119 @@
+<%# Business accounts: paste a store / channel link → platform detected → data fetched from its API %>
+<%
+  const rows = accounts.length ? accounts : [{ platform: '', url: '', token: '' }];
+  const statusPill = s => ({ synced: ['g', 'Synced'], needs_setup: ['a', 'Waiting for API access'], error: ['r', 'Sync failed'], unknown: ['n', 'Not recognised'], pending: ['n', 'Not synced yet'] }[s] || ['n', 'Not synced yet']);
+%>
+<section class="card form-card" id="accounts">
+  <div class="section-title">Business accounts</div>
+  <div class="cap" style="margin-bottom:16px;color:var(--muted)">Paste the client's store or channel link. The platform is detected automatically and the numbers are fetched from its API when you save — no manual typing.</div>
+
+  <div id="acc-rows">
+    <% rows.forEach((a, i) => { const [pc, pl] = statusPill(a.status); %>
+    <div class="acc-row" data-row>
+      <div class="acc-line">
+        <span class="acc-logo" data-logo><% if (a.platform && platforms[a.platform]) { %><img src="<%= base %>/img/brands/<%= platforms[a.platform].logo %>.svg" alt=""><% } else { %><%- icon('link') %><% } %></span>
+        <div class="field acc-url"><label class="sr-only">Account link</label><input name="acc_url" type="url" value="<%= a.url %>" placeholder="https://youtube.com/@channel · yourstore.myshopify.com · amazon.com/sp?seller=…" data-url></div>
+        <div class="select acc-platform"><select name="acc_platform" data-platform aria-label="Platform">
+          <option value="">Auto-detect</option>
+          <% Object.entries(platforms).forEach(([k, p]) => { %><option value="<%= k %>" <%= a.platform === k ? 'selected' : '' %>><%= p.name %></option><% }) %>
+        </select></div>
+        <button type="button" class="btn btn-sm" data-fetch><%- icon('download') %>Fetch data</button>
+        <button type="button" class="icon-btn" data-remove aria-label="Remove account"><%- icon('trash') %></button>
+      </div>
+      <div class="field acc-token" data-token-wrap <%- a.platform === 'shopify' ? '' : 'hidden' %>>
+        <label>Admin API access token</label>
+        <input name="acc_token" type="password" autocomplete="off" placeholder="<%= a.token ? 'Saved — leave blank to keep it' : 'shpat_…' %>">
+      </div>
+      <div class="acc-status" data-status>
+        <% if (a.url) { %><span class="pill <%= pc %>"><%= pl %></span><% if (a.lastSync) { %><span class="muted">· last synced <%= h.timeAgo(a.lastSync) %></span><% } %><% if (a.message) { %><span class="muted">· <%= a.message %></span><% } %><% } %>
+      </div>
+      <div class="acc-note muted" data-note></div>
+      <div class="acc-preview" data-preview hidden></div>
+    </div>
+    <% }) %>
+  </div>
+  <button type="button" class="btn btn-sm" id="acc-add" style="margin-top:6px"><%- icon('plus') %>Add another account</button>
+</section>
+
+<template id="acc-template">
+  <div class="acc-row" data-row>
+    <div class="acc-line">
+      <span class="acc-logo" data-logo><%- icon('link') %></span>
+      <div class="field acc-url"><label class="sr-only">Account link</label><input name="acc_url" type="url" placeholder="Paste a store or channel link" data-url></div>
+      <div class="select acc-platform"><select name="acc_platform" data-platform aria-label="Platform">
+        <option value="">Auto-detect</option>
+        <% Object.entries(platforms).forEach(([k, p]) => { %><option value="<%= k %>"><%= p.name %></option><% }) %>
+      </select></div>
+      <button type="button" class="btn btn-sm" data-fetch><%- icon('download') %>Fetch data</button>
+      <button type="button" class="icon-btn" data-remove aria-label="Remove account"><%- icon('trash') %></button>
+    </div>
+    <div class="field acc-token" data-token-wrap hidden><label>Admin API access token</label><input name="acc_token" type="password" autocomplete="off" placeholder="shpat_…"></div>
+    <div class="acc-status" data-status></div>
+    <div class="acc-note muted" data-note></div>
+    <div class="acc-preview" data-preview hidden></div>
+  </div>
+</template>
+
+<script>
+(() => {
+  const P = <%- JSON.stringify(platforms).replace(/</g, '\\u003c') %>;
+  const BASE = <%- JSON.stringify(base) %>;
+  const USER_ID = <%- JSON.stringify(userId) %>;
+  const rowsEl = document.getElementById('acc-rows');
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = n => n === null || n === undefined ? '—' : Number(n).toLocaleString('en-US');
+  const host = url => { try { return new URL(/^https?:\/\//i.test(url) ? url : 'https://' + url).hostname.replace(/^www\./i, ''); } catch { return ''; } };
+  const detect = url => Object.keys(P).find(k => new RegExp(P[k].hosts, 'i').test(host(url))) || '';
+
+  function refresh(row) {
+    const url = row.querySelector('[data-url]').value.trim();
+    const chosen = row.querySelector('[data-platform]').value;
+    const k = chosen || detect(url);
+    const logo = row.querySelector('[data-logo]');
+    logo.innerHTML = k ? `<img src="${BASE}/img/brands/${P[k].logo}.svg" alt="">` : '<%- icon('link').replace(/'/g, "\\'") %>';
+    row.querySelector('[data-token-wrap]').hidden = !(k && P[k].token);
+    const note = row.querySelector('[data-note]');
+    note.textContent = !url ? '' : !k ? 'Platform not recognised from this link — choose it from the list.' : (chosen ? '' : `Detected: ${P[k].name}. `) + P[k].note;
+  }
+
+  async function fetchData(row) {
+    const btn = row.querySelector('[data-fetch]'), box = row.querySelector('[data-preview]'), status = row.querySelector('[data-status]');
+    const url = row.querySelector('[data-url]').value.trim();
+    if (!url) { toast('Paste a link first.', 'error'); return; }
+    btn.classList.add('loading');
+    try {
+      const r = await fetch(BASE + '/api/integrations/preview', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ url, platform: row.querySelector('[data-platform]').value, token: row.querySelector('[name=acc_token]').value, userId: USER_ID }) });
+      const d = await r.json();
+      const pill = { synced: ['g', 'Connected'], needs_setup: ['a', 'Waiting for API access'], error: ['r', 'Could not fetch'], unknown: ['n', 'Not recognised'] }[d.status] || ['n', d.status];
+      status.innerHTML = `<span class="pill ${pill[0]}">${pill[1]}</span>${d.message ? ` <span class="muted">· ${esc(d.message)}</span>` : ''}`;
+      if (d.status !== 'unknown') row.querySelector('[data-note]').textContent = ''; // the result already explains it
+      const p = d.preview;
+      if (p) {
+        box.hidden = false;
+        box.innerHTML = d.platform === 'youtube'
+          ? `<b>${esc(p.title)}</b><div class="acc-stats"><span>Subscribers<b>${num(p.totalSubscribers)}</b></span><span>Total views<b>${num(p.lifetimeViews)}</b></span><span>Videos<b>${num(p.videoCount)}</b></span><span>Recent uploads<b>${num(p.uploads)}</b></span></div><div class="muted" style="font-size:12.5px">Saved to the profile when you save. Daily views, watch time and revenue need the channel owner's YouTube Analytics access — enter those manually below.</div>`
+          : `<b>${esc(p.title)}</b><div class="acc-stats"><span>Orders · 30 days<b>${num(p.orders30)}</b></span><span>Sales · 30 days<b>${esc(p.currency || 'USD')} ${num(p.sales30)}</b></span></div><div class="muted" style="font-size:12.5px">Sales charts, orders, returns and today's figures are filled in when you save.</div>`;
+      } else box.hidden = true;
+    } catch { toast('Could not reach the server.', 'error'); }
+    btn.classList.remove('loading');
+  }
+
+  function wire(row) {
+    row.querySelector('[data-url]').addEventListener('input', () => refresh(row));
+    row.querySelector('[data-platform]').addEventListener('change', () => refresh(row));
+    row.querySelector('[data-fetch]').addEventListener('click', () => fetchData(row));
+    row.querySelector('[data-remove]').addEventListener('click', () => {
+      if (rowsEl.children.length > 1) row.remove();
+      else { row.querySelectorAll('input').forEach(i => (i.value = '')); row.querySelector('[data-platform]').value = ''; row.querySelector('[data-status]').innerHTML = ''; row.querySelector('[data-preview]').hidden = true; refresh(row); }
+    });
+    refresh(row);
+  }
+  rowsEl.querySelectorAll('[data-row]').forEach(wire);
+  document.getElementById('acc-add').addEventListener('click', () => {
+    if (rowsEl.children.length >= 4) return toast('Up to 4 accounts per client.', 'error');
+    const row = document.getElementById('acc-template').content.firstElementChild.cloneNode(true);
+    rowsEl.appendChild(row); wire(row); row.querySelector('[data-url]').focus();
+  });
+})();
+</script>

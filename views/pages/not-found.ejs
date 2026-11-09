@@ -1,0 +1,8 @@
+<%- include('../partials/head') %>
+<div class="card empty-state" style="padding:80px 20px">
+  <div class="ic red lg"><%- icon(typeof error !== 'undefined' ? 'alert' : 'search') %></div>
+  <h4 style="font-size:20px"><%= title %></h4>
+  <p><%= typeof error !== 'undefined' ? 'An unexpected error happened. Please try again.' : "The page you're looking for doesn't exist or was removed." %></p>
+  <a href="<%= base %>/" class="btn btn-red" style="margin-top:20px">Go to dashboard</a>
+</div>
+<%- include('../partials/foot') %>

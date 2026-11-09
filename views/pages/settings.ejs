@@ -1,0 +1,106 @@
+<%- include('../partials/head') %>
+<%
+  const tabs = [['profile', 'user', 'Profile'], ['company', 'building', 'Company'], ['notifications', 'bell', 'Notifications'], ['security', 'lock', 'Security']];
+  const a = s.admin, co = s.company || {}, n = s.notifications || {};
+  const err = k => errors[k] ? `<div class="err">${errors[k]}</div>` : '';
+  const cls = k => 'field' + (errors[k] ? ' error' : '');
+%>
+<style>
+  .settings{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}
+  .snav{padding:10px;position:sticky;top:96px}
+  .snav a{display:flex;gap:11px;align-items:center;padding:11px 14px;border-radius:9px;color:#3a3b42;font-size:15px;margin-bottom:2px;transition:background .15s,color .15s}
+  .snav a:hover{background:var(--bg);color:var(--ink)}
+  .snav a.on{background:var(--red-soft);color:var(--red-text);font-weight:600}
+  .pref{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .pref:last-child{border-bottom:none}
+  .pref .t{font-weight:600;font-size:15px}
+  .pref .d{color:var(--muted);font-size:13.5px;margin-top:3px}
+  @media (max-width:900px){.settings{grid-template-columns:1fr}.snav{position:static;display:flex;overflow-x:auto}.snav a{white-space:nowrap}}
+</style>
+
+<div class="head"><div><h1>Settings</h1><div class="sub">Manage your account, company details and notifications.</div></div></div>
+
+<div class="settings">
+  <nav class="card snav" aria-label="Settings sections">
+    <% tabs.forEach(([k, ic, l]) => { %><a href="<%= base %>/settings?tab=<%= k %>" class="<%= tab === k ? 'on' : '' %>"><%- icon(ic) %><%= l %></a><% }) %>
+  </nav>
+
+  <div>
+    <% if (tab === 'profile') { %>
+      <form class="card form-card" method="post" action="<%= base %>/settings/profile" novalidate>
+        <div class="section-title">Profile</div><div class="cap">Your details as the portal admin.</div>
+        <div style="display:flex;align-items:center;gap:16px;margin:20px 0">
+          <span class="av lg"><%= h.initials(a.name) %></span>
+          <div><div class="b" style="font-size:16px"><%= a.name %></div><span class="s2"><%= a.role || 'Admin' %> · <%= a.email %></span></div>
+        </div>
+        <div class="form-grid c2">
+          <div class="<%= cls('name') %>"><label for="s-name">Full name</label><input id="s-name" name="name" value="<%= a.name %>" required><%- err('name') %></div>
+          <div class="field"><label for="s-role">Role</label><input id="s-role" name="role" value="<%= a.role %>"></div>
+          <div class="<%= cls('email') %>"><label for="s-email">Email (used to sign in)</label><input id="s-email" name="email" type="email" value="<%= a.email %>" required><%- err('email') %></div>
+          <div class="field"><label for="s-phone">Phone</label><input id="s-phone" name="phone" type="tel" value="<%= a.phone %>"></div>
+          <div class="field"><label for="s-tz">Time zone</label><div class="select" style="width:100%"><select id="s-tz" name="timezone"><% timezones.forEach(([v, l]) => { %><option value="<%= v %>" <%= a.timezone === v ? 'selected' : '' %>><%= l %></option><% }) %></select></div></div>
+          <div class="field"><label for="s-cur">Currency</label><div class="select" style="width:100%"><select id="s-cur" name="currency"><% currencies.forEach(([v, l]) => { %><option value="<%= v %>" <%= a.currency === v ? 'selected' : '' %>><%= l %></option><% }) %></select></div></div>
+        </div>
+        <div class="form-actions"><a href="<%= base %>/settings" class="btn">Cancel</a><button type="submit" class="btn btn-red">Save changes</button></div>
+      </form>
+    <% } %>
+
+    <% if (tab === 'company') { %>
+      <form class="card form-card" method="post" action="<%= base %>/settings/company">
+        <div class="section-title">Company</div><div class="cap">Shown on the Help page and used for support contact details.</div>
+        <div class="form-grid c2" style="margin-top:20px">
+          <div class="field"><label for="c-name">Company name</label><input id="c-name" name="name" value="<%= co.name %>"></div>
+          <div class="field"><label for="c-web">Website</label><input id="c-web" name="website" type="url" value="<%= co.website %>" placeholder="https://"></div>
+          <div class="field"><label for="c-email">Support email</label><input id="c-email" name="supportEmail" type="email" value="<%= co.supportEmail %>"></div>
+          <div class="field"><label for="c-phone">Support phone</label><input id="c-phone" name="supportPhone" type="tel" value="<%= co.supportPhone %>"></div>
+          <div class="field" style="grid-column:1/-1"><label for="c-addr">Address</label><textarea id="c-addr" name="address" style="height:90px"><%= co.address %></textarea></div>
+        </div>
+        <div class="form-actions"><a href="<%= base %>/settings?tab=company" class="btn">Cancel</a><button type="submit" class="btn btn-red">Save changes</button></div>
+      </form>
+    <% } %>
+
+    <% if (tab === 'notifications') { %>
+      <form class="card form-card" method="post" action="<%= base %>/settings/notifications" id="notif-form">
+        <div class="section-title">Notifications</div><div class="cap">Choose what you want to hear about. Changes save automatically.</div>
+        <div style="margin-top:8px">
+          <% notifs.forEach(([k, t, d]) => { %>
+            <label class="pref">
+              <div><div class="t"><%= t %></div><div class="d"><%= d %></div></div>
+              <span class="toggle"><input type="checkbox" name="<%= k %>" <%= n[k] ? 'checked' : '' %>><span></span></span>
+            </label>
+          <% }) %>
+        </div>
+        <noscript><div class="form-actions"><button type="submit" class="btn btn-red">Save</button></div></noscript>
+      </form>
+      <script>
+        (() => {
+          const f = document.getElementById('notif-form');
+          f.addEventListener('change', async () => {
+            try {
+              const r = await fetch(f.action, { method: 'POST', headers: { Accept: 'application/json' }, body: new URLSearchParams(new FormData(f)) });
+              if (!r.ok) throw 0;
+              toast('Notification preferences saved.');
+            } catch { toast('Could not save. Please try again.', 'error'); }
+          });
+        })();
+      </script>
+    <% } %>
+
+    <% if (tab === 'security') { %>
+      <form class="card form-card" method="post" action="<%= base %>/settings/password" novalidate>
+        <div class="section-title">Change password</div><div class="cap">Use at least 8 characters. You'll stay signed in on this device.</div>
+        <div class="form-grid c2" style="margin-top:20px">
+          <div class="<%= cls('current') %>" style="grid-column:1/-1;max-width:calc(50% - 10px)"><label for="pw-cur">Current password</label><div class="input-icon"><input id="pw-cur" name="current" type="password" autocomplete="current-password" required><button type="button" data-reveal aria-label="Show password"><%- icon('eye') %></button></div><%- err('current') %></div>
+          <div class="<%= cls('next') %>"><label for="pw-new">New password</label><div class="input-icon"><input id="pw-new" name="next" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-reveal aria-label="Show password"><%- icon('eye') %></button></div><%- err('next') %></div>
+          <div class="<%= cls('confirm') %>"><label for="pw-conf">Confirm new password</label><div class="input-icon"><input id="pw-conf" name="confirm" type="password" autocomplete="new-password" required><button type="button" data-reveal aria-label="Show password"><%- icon('eye') %></button></div><%- err('confirm') %></div>
+        </div>
+        <div class="form-actions"><button type="submit" class="btn btn-red">Update password</button></div>
+      </form>
+      <div class="card form-card">
+        <div class="section-title">Session</div><div class="cap">Sign out of the portal on this device.</div>
+        <form method="post" action="<%= base %>/logout" style="margin-top:16px"><button type="submit" class="btn btn-danger"><%- icon('logout') %>Log out</button></form>
+      </div>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/foot') %>

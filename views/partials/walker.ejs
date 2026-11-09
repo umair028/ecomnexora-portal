@@ -1,0 +1,35 @@
+<%# A lone figure in a long coat walking away from us, towards the moon (sign-in page "moon").
+    Included twice by login-moon.ejs: the figure (reflection: false, carries the <defs>) and its mirror image. %>
+<svg class="lm-walker-svg" viewBox="0 0 60 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <% if (!reflection) { %>
+  <defs>
+    <!-- backlit by the moon in front of it: a warm rim along the top edges -->
+    <filter id="lm-rim" x="-30%" y="-10%" width="160%" height="120%">
+      <feOffset in="SourceAlpha" dx="0" dy="1.1" result="o"/>
+      <feComposite in="SourceAlpha" in2="o" operator="out" result="edge"/>
+      <feGaussianBlur in="edge" stdDeviation=".45" result="eb"/>
+      <feFlood flood-color="#ffae8f"/>
+      <feComposite in2="eb" operator="in" result="rim"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="rim"/></feMerge>
+    </filter>
+    <filter id="lm-ripple" x="-20%" y="-10%" width="140%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency=".02 .3" numOctaves="1" seed="5" result="n">
+        <animate attributeName="baseFrequency" dur="6s" values=".02 .3;.026 .38;.02 .3" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  <% } %>
+  <g filter="url(#lm-rim)" fill="#070506">
+    <g class="lm-figure">
+      <g class="lm-leg lm-leg-l"><rect x="19" y="100" width="9.5" height="54" rx="4.5"/><ellipse cx="23.5" cy="155" rx="6" ry="3.2"/></g>
+      <g class="lm-leg lm-leg-r"><rect x="31.5" y="100" width="9.5" height="54" rx="4.5"/><ellipse cx="36.5" cy="155" rx="6" ry="3.2"/></g>
+      <g class="lm-arm lm-arm-l"><rect x="9.5" y="33" width="8" height="56" rx="4"/></g>
+      <g class="lm-arm lm-arm-r"><rect x="42.5" y="33" width="8" height="56" rx="4"/></g>
+      <!-- long coat, collar, head -->
+      <path d="M15 33 Q30 25 45 33 L48 96 Q47 106 45 110 L15 110 Q13 106 12 96 Z"/>
+      <path d="M22 29 Q30 24 38 29 L36 36 Q30 33 24 36 Z"/>
+      <ellipse cx="30" cy="15" rx="8.2" ry="9.6"/>
+    </g>
+  </g>
+</svg>

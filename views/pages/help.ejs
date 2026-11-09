@@ -1,0 +1,111 @@
+<%- include('../partials/head') %>
+<style>
+  .hero{background:var(--hero);color:#fff;border-radius:var(--radius);padding:36px 38px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-70px;top:-70px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(224,30,47,.4),transparent 70%);pointer-events:none}
+  .hero h2{font-family:var(--font);font-size:26px;font-weight:700;margin-bottom:6px}
+  .hero p{color:#bdbdc4;font-size:15px}
+  .hero .field{margin-top:22px;max-width:640px;border:none;position:relative;z-index:1}
+  .topic{display:flex;flex-direction:column;gap:12px;text-align:left;cursor:pointer;font:inherit;color:inherit}
+  .topic.on{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,30,47,.12)}
+  .topic .t{font-weight:600;font-size:16px}
+  .topic .d{color:var(--muted);font-size:14px;line-height:1.5}
+  .topic .n{font-size:13.5px;color:var(--red-text);font-weight:600;margin-top:auto}
+  .faq-item{border-bottom:1px solid var(--line)}
+  .faq-item:last-child{border-bottom:none}
+  .faq-q{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:17px 0;font-size:15px;font-weight:500;text-align:left;transition:color .15s}
+  .faq-q:hover{color:var(--red-text)}
+  .faq-q .i{transition:transform .25s var(--ease);color:#6b6c74}
+  .faq-item.open .faq-q{font-weight:600}
+  .faq-item.open .faq-q .i{transform:rotate(180deg)}
+  .faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s var(--ease)}
+  .faq-a>div{overflow:hidden;color:var(--muted);font-size:14.5px;line-height:1.65}
+  .faq-item.open .faq-a{grid-template-rows:1fr}
+  .faq-item.open .faq-a>div{padding-bottom:18px}
+  .faq-a b{color:var(--ink)}
+</style>
+
+<div class="hero mb">
+  <h2>How can we help?</h2>
+  <p>Guides and answers for managing users, payments and reports in Ecom Nexora.</p>
+  <div class="search"><div class="field">
+    <%- icon('search') %><input id="help-q" type="search" placeholder="Search help articles" aria-label="Search help articles">
+  </div></div>
+</div>
+
+<div class="grid g4 mb" id="topics">
+  <% topics.forEach(t => { const count = faq.filter(f => f[0] === t.key).length; %>
+    <button type="button" class="card hover topic" data-topic="<%= t.key %>">
+      <span class="ic lg <%= t.color %>"><%- icon(t.icon) %></span>
+      <div><div class="t"><%= t.title %></div><div class="d"><%= t.text %></div></div>
+      <div class="n"><%= count %> article<%= count === 1 ? '' : 's' %> →</div>
+    </button>
+  <% }) %>
+</div>
+
+<div class="grid split">
+  <div class="card" style="padding:20px 26px">
+    <div class="card-head" style="margin-bottom:0"><h3 id="faq-title">Frequently asked questions</h3><button type="button" class="link" id="faq-reset" style="font-size:14px;display:none">Show all</button></div>
+    <div id="faq">
+      <% faq.forEach(([topic, q, a], i) => { %>
+        <div class="faq-item <%= i === 0 ? 'open' : '' %>" data-topic="<%= topic %>">
+          <button type="button" class="faq-q" aria-expanded="<%= i === 0 %>"><span><%= q %></span><%- icon('chevron') %></button>
+          <div class="faq-a"><div><%- a %></div></div>
+        </div>
+      <% }) %>
+    </div>
+    <div class="empty-state" id="faq-empty" style="display:none;padding:30px"><p>No articles match your search. Try other words or contact support.</p></div>
+  </div>
+  <div style="display:grid;gap:16px;align-content:start">
+    <div class="card">
+      <h3>Still need help?</h3><div class="cap" style="margin-bottom:6px">Our support team replies within 4 business hours.</div>
+      <div class="list">
+        <% if (company.supportEmail) { %><a href="mailto:<%= company.supportEmail %>"><span class="ic blue"><%- icon('mail') %></span><div class="grow"><div class="t">Email support</div><span class="s2"><%= company.supportEmail %></span></div><%- icon('right') %></a><% } %>
+        <% if (company.supportPhone) { %><a href="tel:<%= company.supportPhone.replace(/[^\d+]/g, '') %>"><span class="ic amber"><%- icon('phone') %></span><div class="grow"><div class="t">Call us</div><span class="s2"><%= company.supportPhone %></span></div><%- icon('right') %></a><% } %>
+        <a href="<%= site %>/ecomxpert-help" target="_blank" rel="noopener"><span class="ic dark"><%- icon('globe') %></span><div class="grow"><div class="t">Ecom Nexora Help Center</div><span class="s2">Guides on ecomnexora.com</span></div><%- icon('external') %></a>
+        <a href="<%= base %>/messages"><span class="ic red"><%- icon('message') %></span><div class="grow"><div class="t">Messages</div><span class="s2">Talk to your users from the inbox</span></div><%- icon('right') %></a>
+      </div>
+      <% if (company.supportEmail) { %><a class="btn btn-red btn-block" style="margin-top:12px" href="mailto:<%= company.supportEmail %>?subject=Portal%20support">Contact support</a><% } %>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3>System status</h3><span class="pill g">All systems operational</span></div>
+      <div class="cap" style="margin-top:6px">Portal server is running normally.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const items = [...document.querySelectorAll('.faq-item')];
+  const topics = [...document.querySelectorAll('.topic')];
+  const q = document.getElementById('help-q');
+  const title = document.getElementById('faq-title');
+  const reset = document.getElementById('faq-reset');
+  const empty = document.getElementById('faq-empty');
+  let topic = '';
+  document.getElementById('faq').addEventListener('click', e => {
+    const b = e.target.closest('.faq-q'); if (!b) return;
+    const it = b.parentElement;
+    it.classList.toggle('open');
+    b.setAttribute('aria-expanded', it.classList.contains('open'));
+  });
+  function apply() {
+    const term = q.value.trim().toLowerCase();
+    let n = 0;
+    items.forEach(it => {
+      const ok = (!topic || it.dataset.topic === topic) && (!term || it.textContent.toLowerCase().includes(term));
+      it.style.display = ok ? '' : 'none';
+      if (ok) n++;
+      if (term && ok) it.classList.add('open');
+    });
+    empty.style.display = n ? 'none' : '';
+    topics.forEach(t => t.classList.toggle('on', t.dataset.topic === topic));
+    const t = topics.find(t => t.dataset.topic === topic);
+    title.textContent = t ? t.querySelector('.t').textContent : term ? 'Search results' : 'Frequently asked questions';
+    reset.style.display = topic || term ? '' : 'none';
+  }
+  topics.forEach(t => t.addEventListener('click', () => { topic = topic === t.dataset.topic ? '' : t.dataset.topic; apply(); document.getElementById('faq').scrollIntoView({ behavior: 'smooth', block: 'center' }); }));
+  q.addEventListener('input', apply);
+  reset.addEventListener('click', () => { topic = ''; q.value = ''; apply(); });
+})();
+</script>
+<%- include('../partials/foot') %>

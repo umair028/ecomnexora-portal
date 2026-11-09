@@ -1,0 +1,117 @@
+<%- include('../partials/head') %>
+<%
+  const qs = extra => {
+    const p = new URLSearchParams();
+    const all = { status, user, range: range === 'all' ? '' : range, q, ...extra };
+    for (const [k, v] of Object.entries(all)) if (v) p.set(k, v);
+    const s = p.toString();
+    return base + '/orders' + (s ? '?' + s : '');
+  };
+  const rangeLabel = { '7': 'Last 7 days', '30': 'Last 30 days', '90': 'Last 90 days', all: 'All time' };
+%>
+<div class="head">
+  <div>
+    <h1>Orders</h1>
+    <div class="sub"><%= kpi.total %> orders<%= user && userMap[user] ? ' for ' + h.clientRef(userMap[user]) : ' across ' + users.length + ' users' %> · <%= rangeLabel[range] || 'All time' %>. Most recent first.</div>
+  </div>
+  <form class="actions" method="get" action="<%= base %>/orders">
+    <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
+    <div class="select"><select name="user" data-autosubmit aria-label="Filter by user">
+      <option value="">All clients</option>
+      <% users.forEach(u => { %><option value="<%= u.id %>" <%= user === u.id ? 'selected' : '' %>><%= h.clientOption(u) %></option><% }) %>
+    </select></div>
+    <div class="select"><select name="range" data-autosubmit aria-label="Date range">
+      <% Object.entries(rangeLabel).forEach(([k, l]) => { %><option value="<%= k %>" <%= range === k ? 'selected' : '' %>><%= l %></option><% }) %>
+    </select></div>
+    <a href="<%= base %>/orders/export.csv<%= qs({ status: '' }).slice((base + '/orders').length) %>" class="btn btn-sm" style="height:44px"><%- icon('download') %>Export</a>
+    <button type="button" class="btn btn-red" style="height:44px" data-modal="order-modal"><%- icon('plus') %>New order</button>
+  </form>
+</div>
+
+<div class="grid g4 mb">
+  <a class="card kpi" href="<%= qs({ status: '' }) %>"><div class="lbl"><span class="ic red"><%- icon('cart') %></span>Total orders</div><div class="val"><%= kpi.total %></div><div class="delta"><%= kpi.revenue %> in order value</div></a>
+  <a class="card kpi" href="<%= qs({ status: 'Pending', page: '' }) %>"><div class="lbl"><span class="ic amber"><%- icon('clock') %></span>Pending</div><div class="val"><%= kpi.pending %></div><div class="delta"><%= kpi.pendingOld %> older than 48 hours</div></a>
+  <a class="card kpi" href="<%= qs({ status: 'In transit', page: '' }) %>"><div class="lbl"><span class="ic blue"><%- icon('truck') %></span>In transit</div><div class="val"><%= kpi.transit %></div><div class="delta">On the way to customers</div></a>
+  <a class="card kpi" href="<%= qs({ status: 'Returned', page: '' }) %>"><div class="lbl"><span class="ic green"><%- icon('return') %></span>Returns</div><div class="val"><%= kpi.returns %></div><div class="delta"><span class="up"><%= kpi.returnRate %></span> of units returned</div></a>
+</div>
+
+<div class="card" style="padding:18px 22px">
+  <div class="card-head" style="align-items:center">
+    <nav class="tabs" aria-label="Filter by status">
+      <a href="<%= qs({ status: '', page: '' }) %>" class="<%= !status ? 'on' : '' %>">All<span class="count"><%= counts.all %></span></a>
+      <% statuses.forEach(s => { %><a href="<%= qs({ status: s, page: '' }) %>" class="<%= status === s ? 'on' : '' %>"><%= s %><span class="count"><%= counts[s] %></span></a><% }) %>
+    </nav>
+    <form method="get" action="<%= base %>/orders" class="search" style="flex:0 1 280px" role="search">
+      <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
+      <% if (user) { %><input type="hidden" name="user" value="<%= user %>"><% } %>
+      <% if (range !== 'all') { %><input type="hidden" name="range" value="<%= range %>"><% } %>
+      <div class="field" style="height:40px"><%- icon('search') %><input name="q" value="<%= q %>" placeholder="Order # or product" aria-label="Search orders"></div>
+    </form>
+  </div>
+
+  <% if (orders.length) { %>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Order</th><th>Client</th><th>Product</th><th>Date</th><th>Status</th><th class="r">Units</th><th class="r">Amount</th><th></th></tr></thead>
+    <tbody>
+      <% orders.forEach(o => { const u = userMap[o.userId]; %>
+        <tr>
+          <td class="b">#<%= o.number %></td>
+          <td>
+            <% if (u) { %><a href="<%= base %>/users/<%= u.id %>" style="display:flex;align-items:center;gap:10px"><span class="av sm"><%= h.categoryInitials(u.serviceId) %></span><span><span class="b client-id"><%= h.clientRef(u) %></span><span class="s2"><%= h.ANON_SUB %></span></span></a>
+            <% } else { %><span class="muted">Deleted client</span><% } %>
+          </td>
+          <td><%= o.product %></td>
+          <td class="muted" style="white-space:nowrap"><%= h.longDate(o.date) %></td>
+          <td><span class="pill <%= h.pill(o.status) %>"><%= o.status %></span></td>
+          <td class="r"><%= o.units %></td>
+          <td class="r b"><%= h.money(o.amount, { cents: true }) %></td>
+          <td class="r">
+            <div class="menu">
+              <button type="button" class="icon-btn" style="border:none" data-menu-toggle aria-label="Order actions"><%- icon('dots') %></button>
+              <div class="dd">
+                <% statuses.filter(s => s !== o.status).forEach(s => { %>
+                  <form method="post" action="<%= base %>/orders/<%= o.id %>/status"><input type="hidden" name="status" value="<%= s %>"><button type="submit"><%- icon({ Pending: 'clock', 'In transit': 'truck', Delivered: 'check', Returned: 'return' }[s]) %>Mark <%= s.toLowerCase() %></button></form>
+                <% }) %>
+                <form method="post" action="<%= base %>/orders/<%= o.id %>/delete" data-confirm="Order #<%= o.number %> will be removed permanently." data-confirm-title="Delete order?" data-confirm-ok="Delete order">
+                  <button type="submit" class="danger"><%- icon('trash') %>Delete</button>
+                </form>
+              </div>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table></div>
+  <div class="pager">
+    <span class="muted">Showing <%= (page - 1) * 10 + 1 %>–<%= Math.min(page * 10, total) %> of <%= total %></span>
+    <div class="pages">
+      <a href="<%= qs({ page: page - 1 }) %>" class="<%= page <= 1 ? 'disabled' : '' %>" aria-label="Previous page"><%- icon('left') %></a>
+      <% for (let p = Math.max(1, page - 2); p <= Math.min(pages, page + 2); p++) { %>
+        <% if (p === page) { %><span class="cur"><%= p %></span><% } else { %><a href="<%= qs({ page: p }) %>"><%= p %></a><% } %>
+      <% } %>
+      <a href="<%= qs({ page: page + 1 }) %>" class="<%= page >= pages ? 'disabled' : '' %>" aria-label="Next page"><%- icon('right') %></a>
+    </div>
+  </div>
+  <% } else { %>
+    <div class="empty-state"><div class="ic red"><%- icon('cart') %></div><h4>No orders found</h4><p>Try another status, user or date range.</p><a href="<%= base %>/orders" class="btn btn-sm" style="margin-top:14px">Clear filters</a></div>
+  <% } %>
+</div>
+
+<div class="modal" id="order-modal" role="dialog" aria-modal="true" aria-labelledby="order-title">
+  <form class="box" method="post" action="<%= base %>/orders">
+    <div class="mh"><h3 id="order-title">New order</h3><button type="button" class="icon-btn" style="border:none" data-close aria-label="Close"><%- icon('x') %></button></div>
+    <div class="mb"><div class="form-grid c2">
+      <div class="field"><label for="o-user">Client <span class="req">*</span></label><div class="select" style="width:100%"><select id="o-user" name="userId" required>
+        <option value="">Choose a client</option>
+        <% users.forEach(u => { %><option value="<%= u.id %>" <%= user === u.id ? 'selected' : '' %>><%= h.clientOption(u) %></option><% }) %>
+      </select></div></div>
+      <div class="field"><label for="o-date">Date</label><input id="o-date" name="date" type="date" value="<%= today %>"></div>
+      <div class="field" style="grid-column:1/-1"><label for="o-product">Product <span class="req">*</span></label><input id="o-product" name="product" required maxlength="120" autofocus></div>
+      <div class="field"><label for="o-units">Units</label><input id="o-units" name="units" type="number" min="1" value="1"></div>
+      <div class="field"><label for="o-amount">Amount (USD) <span class="req">*</span></label><input id="o-amount" name="amount" type="number" min="0" step="0.01" required></div>
+      <div class="field"><label for="o-status">Status</label><div class="select" style="width:100%"><select id="o-status" name="status"><% statuses.forEach(s => { %><option><%= s %></option><% }) %></select></div></div>
+    </div></div>
+    <div class="mf"><button type="button" class="btn btn-sm" data-close>Cancel</button><button type="submit" class="btn btn-sm btn-red">Create order</button></div>
+  </form>
+</div>
+<%- include('../partials/foot') %>

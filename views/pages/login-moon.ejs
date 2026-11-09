@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050405">
+  <title><%= title %> · Ecom Nexora</title>
+  <link rel="icon" href="<%= base %>/img/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<%= base %>/css/app.css?v=<%= v %>">
+  <link rel="stylesheet" href="<%= base %>/css/login-moon.css?v=<%= v %>">
+</head>
+<body class="lm-body">
+<div class="lm">
+  <!-- moonrise over drifting mist and wet, cracked ground, drawn by js/login-moon.js (a still gradient without WebGL) -->
+  <canvas class="lm-canvas" aria-hidden="true"></canvas>
+  <!-- the lone walker in the middle, with its reflection (wide screens only) -->
+  <div class="lm-walker" aria-hidden="true">
+    <div class="lm-walker-fig"><%- include('../partials/walker', { reflection: false }) %></div>
+    <div class="lm-walker-refl"><%- include('../partials/walker', { reflection: true }) %></div>
+  </div>
+  <div class="lm-shade" aria-hidden="true"></div>
+
+  <header class="lm-nav">
+    <div class="lm-bar">
+      <a href="<%= site %>/" class="lm-logo" aria-label="Ecom Nexora website"><img src="<%= base %>/img/logo-white.png" alt="Ecom Nexora"></a>
+      <nav class="lm-links lm-hide-sm" aria-label="Website">
+        <a href="<%= site %>/">Website</a>
+        <a href="mailto:hello@ecomnexora.com">Contact</a>
+      </nav>
+      <a class="lm-btn lm-btn-red" href="tel:+14243940041"><%- icon('phone') %>Let's Talk</a>
+    </div>
+  </header>
+
+  <main class="lm-main">
+    <section class="lm-copy">
+      <div class="lm-top">
+        <div class="lm-badge"><span class="lm-tag">Portal</span>Balances, sales and payouts, all live</div>
+        <h1 class="lm-title">Every store, every sale, <em>one dashboard.</em></h1>
+        <p class="lm-text">Track balances, sales and payouts for every Ecom Nexora client — automated stores on Amazon, Shopify, Walmart, TikTok and more.</p>
+        <div class="lm-ctas">
+          <a class="lm-btn lm-btn-light" href="<%= site %>/">Visit ecomnexora.com <%- icon('right') %></a>
+          <a class="lm-link" href="tel:+14243940041">Talk to us <%- icon('right') %></a>
+        </div>
+      </div>
+      <div class="lm-brands">
+        <p>Running automated stores on</p>
+        <div class="lm-logos">
+          <% [['amazon', 'Amazon'], ['shopify', 'Shopify'], ['walmart', 'Walmart'], ['tiktok', 'TikTok'], ['facebook', 'Facebook'], ['youtube', 'YouTube']].forEach(([f, name]) => { %>
+            <span><img src="<%= base %>/img/brands/<%= f %>.svg" alt=""><%= name %></span>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <div class="lm-card-wrap">
+      <form class="lm-card" method="post" action="<%= base %>/login-moon" novalidate>
+        <h2>Welcome back</h2>
+        <p class="lm-card-sub">Sign in to the Ecom Nexora admin portal.</p>
+        <% if (error) { %><div class="lm-alert" role="alert"><%- icon('alert') %><span><%= error %></span></div><% } %>
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="lm-field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username" placeholder="you@company.com" value="<%= email %>" required <%= email ? '' : 'autofocus' %>>
+        </div>
+        <div class="lm-field">
+          <div class="lm-label-row"><label for="password">Password</label><a href="<%= base %>/forgot-password">Forgot password?</a></div>
+          <div class="input-icon">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required <%= email ? 'autofocus' : '' %>>
+            <button type="button" data-reveal aria-label="Show password"><%- icon('eye') %></button>
+          </div>
+        </div>
+        <label class="lm-check"><input type="checkbox" name="remember" checked><span>Keep me signed in for 30 days</span></label>
+        <button class="lm-submit" type="submit">Sign in <%- icon('right') %></button>
+        <p class="lm-foot">Need access? <a href="mailto:hello@ecomnexora.com">Contact your admin</a></p>
+      </form>
+    </div>
+  </main>
+</div>
+<div class="toasts" id="toasts"></div>
+<script src="<%= base %>/js/app.js?v=<%= v %>"></script>
+<script src="<%= base %>/js/login-moon.js?v=<%= v %>"></script>
+</body>
+</html>

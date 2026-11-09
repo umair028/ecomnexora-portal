@@ -1,0 +1,111 @@
+<%- include('../partials/head') %>
+<div class="head">
+  <div>
+    <h1>Users overview</h1>
+    <div class="sub">Every Ecom Nexora user in one place.</div>
+  </div>
+</div>
+
+<!-- headline numbers: solid brand-colour cards -->
+<div class="grid g4 mb kgrid">
+  <a class="kcard k-red" href="<%= base %>/users"><span class="kc-ic"><%- icon('wallet') %></span><div class="kc-txt"><div class="kc-lbl">Combined balance</div><div class="kc-val"><%= kpi.balance %></div><div class="kc-sub">Across <%= kpi.users %> clients</div></div></a>
+  <a class="kcard k-dark" href="<%= base %>/users"><span class="kc-ic"><%- icon('users') %></span><div class="kc-txt"><div class="kc-lbl">Total users</div><div class="kc-val"><%= kpi.users %></div><div class="kc-sub"><%= kpi.activeUsers %> active</div></div></a>
+  <a class="kcard k-orange" href="<%= base %>/reports?range=week"><span class="kc-ic"><%- icon('cart') %></span><div class="kc-txt"><div class="kc-lbl">Sales today</div><div class="kc-val"><%= kpi.sales %></div><div class="kc-sub">All clients combined</div></div></a>
+  <a class="kcard k-green" href="<%= base %>/orders"><span class="kc-ic"><%- icon('box') %></span><div class="kc-txt"><div class="kc-lbl">Orders</div><div class="kc-val"><%= kpi.orders %></div><div class="kc-sub"><%= kpi.pending %> pending</div></div></a>
+</div>
+
+<div class="dash-main mb">
+  <!-- at a glance + recent activity (left column, beside the chart and the top clients) -->
+  <div class="card dash-side">
+    <h3>At a glance</h3>
+    <div class="rings">
+      <% glance.forEach(g => { const c = 2 * Math.PI * 30; %>
+        <a class="ring" href="<%= base + g.href %>" title="<%= g.label %>: <%= g.value %>%">
+          <svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="30" class="ring-bg"/><circle cx="38" cy="38" r="30" class="ring-val" stroke="<%= g.color %>" stroke-dasharray="<%= (c * g.value / 100).toFixed(1) %> <%= c.toFixed(1) %>" style="--len:<%= c.toFixed(1) %>"/></svg>
+          <b><%= g.value %>%</b>
+          <span><%= g.label %></span>
+        </a>
+      <% }) %>
+    </div>
+    <div class="dash-side-sep"></div>
+    <div class="card-head" style="margin-bottom:6px"><h3>Recent activity</h3></div>
+    <div class="activity" id="activity">
+      <% activity.forEach(a => { %>
+        <a href="<%= base + a.href %>">
+          <span class="ic sm <%= a.tone %>"><%- icon(a.icon) %></span>
+          <div class="grow"><div class="act-t"><%- a.text %></div><span class="s2"><%= h.timeAgo(a.at) %></span></div>
+        </a>
+      <% }) %>
+      <% if (!activity.length) { %><div class="muted">Nothing yet.</div><% } %>
+    </div>
+    <% if (activity.length > 4) { %><button type="button" class="act-more" data-scroll-more="#activity" aria-label="Show more activity"><%- icon('down') %></button><% } %>
+  </div>
+
+  <!-- revenue stats: switchable lines, range, tooltip, legend -->
+  <div class="card dash-stats">
+    <div class="card-head stats-head">
+      <h3>Revenue stats</h3>
+      <div class="stats-ctl">
+        <% stats.series.forEach(s => { %>
+          <button type="button" class="sw" role="switch" aria-checked="<%= s.on %>" data-chart-toggle="#revenue-chart" data-key="<%= s.key %>" style="--c:<%= s.color %>"><span><%= s.label %></span><i></i></button>
+        <% }) %>
+        <div class="select"><select data-chart-range="#revenue-chart" aria-label="Period">
+          <option value="12">Last 12 months</option><option value="6">Last 6 months</option><option value="3">Last 3 months</option>
+        </select></div>
+      </div>
+    </div>
+    <div id="revenue-chart" data-chart="<%= JSON.stringify(stats) %>"></div>
+    <div class="legend">
+      <% stats.series.forEach(s => { %><span><i style="background:<%= s.color %>"></i><%= s.label %></span><% }) %>
+    </div>
+    <div class="cap" style="text-align:center;margin-top:6px"><%= trend.contributors %> of <%= totalUsers %> users have 12-month sales entered. <a class="link" href="<%= base %>/reports">View report</a></div>
+  </div>
+
+  <!-- top clients by balance: cards that scroll sideways -->
+  <section class="dash-clients">
+    <div class="sec-head"><h2>Top clients</h2><a class="link" href="<%= base %>/users">View all</a></div>
+    <div class="hscroll" data-pager="#client-dots">
+      <% top.forEach(u => { const logo = h.serviceLogo(u.serviceId); const [ic, tone] = h.categoryIcon(h.serviceCategory(u.serviceId)); %>
+        <a class="card client-card" href="<%= base %>/users/<%= u.id %>">
+          <div class="cc-top">
+            <div class="grow">
+              <div class="s2 ellipsis"><%= h.serviceName(u.serviceId) %></div>
+              <div class="cc-id client-id"><%= h.clientRef(u) %></div>
+            </div>
+            <% if (logo) { %><span class="brand-tile"><img src="<%= base %>/img/brands/<%= logo %>.svg" alt=""></span><% } else { %><span class="ic lg <%= tone %>"><%- icon(ic) %></span><% } %>
+          </div>
+          <div class="cc-bal"><%= h.money(u.balance) %> <span>balance</span></div>
+          <div class="cc-facts">
+            <div><span>Sales today</span><b><%= h.money(u.salesToday) %></b></div>
+            <div><span>Orders</span><b><%= h.num(u.orders, '0') %></b></div>
+            <div><span>Payout</span><b><%= u.nextPayment ? h.shortDate(u.nextPayment) : '—' %></b></div>
+          </div>
+          <div class="cc-foot"><span class="pill <%= h.pill(u.status) %>"><%= u.status %></span><span class="s2 ellipsis"><%= u.country || h.serviceCategory(u.serviceId) %></span></div>
+        </a>
+      <% }) %>
+    </div>
+    <div class="dots" id="client-dots" aria-hidden="true"></div>
+  </section>
+</div>
+
+<!-- services: platform logo + how many clients use it -->
+<section class="mb">
+  <div class="sec-head">
+    <h2>Services</h2>
+    <div class="sec-tools"><div class="dots" id="svc-dots" aria-hidden="true"></div><a class="btn btn-sm view-more" href="<%= base %>/services">View all <%- icon('right') %></a></div>
+  </div>
+  <div class="hscroll" data-pager="#svc-dots">
+    <% serviceCards.forEach(s => { %>
+      <a class="card svc-card" href="<%= base %>/users?service=<%= s.id %>">
+        <% if (s.logo) { %><span class="svc-logo"><img src="<%= base %>/img/brands/<%= s.logo %>.svg" alt=""></span><% } else { %><span class="ic lg <%= s.color || 'red' %>"><%- icon(s.icon || 'box') %></span><% } %>
+        <div class="grow"><div class="t"><%= s.name %></div><span class="link"><%= s.clients %> client<%= s.clients === 1 ? '' : 's' %></span></div>
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<div class="card">
+  <div class="card-head"><h3>Balance by client</h3></div>
+  <div data-chart="<%= JSON.stringify({ type: 'bar', points: balanceChart, height: 300, barWidth: 60, empty: 'No users yet.' }) %>"></div>
+</div>
+<%- include('../partials/foot') %>

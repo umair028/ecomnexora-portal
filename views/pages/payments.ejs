@@ -1,0 +1,113 @@
+<%- include('../partials/head') %>
+<div class="head">
+  <div>
+    <h1>Payments</h1>
+    <div class="sub">Payouts and scheduled payments for every user.</div>
+  </div>
+  <div class="actions">
+    <a href="<%= base %>/payments/export.csv" class="btn btn-sm" style="height:44px"><%- icon('download') %>Export</a>
+    <button type="button" class="btn btn-red" style="height:44px" data-modal="pay-modal"><%- icon('plus') %>Record payment</button>
+  </div>
+</div>
+
+<div class="grid g4 mb">
+  <a class="card kpi" href="<%= base %>/payments?status=Paid"><div class="lbl"><span class="ic green"><%- icon('check') %></span>Paid out this month</div><div class="val"><%= kpi.paidThis %></div>
+    <div class="delta"><% if (kpi.change !== null) { %><span class="<%= kpi.change >= 0 ? 'up' : 'down' %>"><%= kpi.change >= 0 ? '↑' : '↓' %> <%= Math.abs(kpi.change) %>%</span> vs last month<% } else { %>No payouts last month<% } %></div></a>
+  <a class="card kpi" href="<%= base %>/payments?status=Scheduled"><div class="lbl"><span class="ic blue"><%- icon('calendar') %></span>Scheduled</div><div class="val"><%= kpi.scheduled %></div><div class="delta"><%= kpi.scheduledCount %> payment<%= kpi.scheduledCount === 1 ? '' : 's' %> in next 30 days</div></a>
+  <a class="card kpi" href="<%= base %>/payments?status=Overdue"><div class="lbl"><span class="ic red"><%- icon('alert') %></span>Overdue</div><div class="val"><%= kpi.overdue %></div><div class="delta"><%= kpi.overdueCount ? kpi.overdueCount + ' payment' + (kpi.overdueCount === 1 ? '' : 's') + ' · ' + kpi.overdueNames : 'Nothing overdue' %></div></a>
+  <a class="card kpi" href="<%= base %>/users"><div class="lbl"><span class="ic amber"><%- icon('wallet') %></span>Combined balance</div><div class="val"><%= kpi.balance %></div><div class="delta">Across <%= kpi.userCount %> users</div></a>
+</div>
+
+<div class="grid split mb">
+  <div class="card">
+    <div class="card-head">
+      <div><h3>Payouts over time</h3><div class="cap">Monthly totals, last 9 months</div></div>
+      <div class="legend"><span><i style="background:#ff3131"></i>Paid</span><span><i style="background:#ff9494"></i>Scheduled / overdue</span></div>
+    </div>
+    <div data-chart="<%= JSON.stringify({ type: 'bar', points: chart.map(c => ({ label: c.label, paid: c.paid, scheduled: c.scheduled })), stack: [{ key: 'paid', label: 'Paid', color: '#ff3131' }, { key: 'scheduled', label: 'Scheduled', color: '#ff9494' }], height: 320, barWidth: 46, empty: 'No payments yet.' }) %>"></div>
+  </div>
+  <div class="card">
+    <div class="card-head" style="margin-bottom:0"><h3>Upcoming payments</h3><span class="muted" style="font-size:14px">Next 30 days</span></div>
+    <div class="list">
+      <% upcoming.forEach(p => { const u = userMap[p.userId]; const d = h.daysUntil(p.date); %>
+        <div>
+          <span class="av"><%= u ? h.categoryInitials(u.serviceId) : '?' %></span>
+          <div class="grow">
+            <div class="t client-id"><%= h.clientRef(u) %></div>
+            <span class="s2"><%= h.shortDate(p.date) %> · <span class="pill <%= p.display === 'Overdue' ? 'r' : d <= 7 ? 'b' : 'n' %>" style="padding:2px 8px;font-size:11.5px"><%= p.display === 'Overdue' ? 'Overdue' : d === 0 ? 'Today' : 'In ' + d + ' day' + (d === 1 ? '' : 's') %></span></span>
+          </div>
+          <div style="text-align:right">
+            <div class="amt"><%= h.money(p.amount) %></div>
+            <form method="post" action="<%= base %>/payments/<%= p.id %>/paid" data-confirm="Mark <%= p.ref %> (<%= h.money(p.amount) %>) as paid today?" data-confirm-title="Mark as paid" data-confirm-ok="Mark paid">
+              <button type="submit" class="link" style="font-size:12.5px">Mark paid</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+      <% if (!upcoming.length) { %><div class="muted" style="justify-content:center;padding:30px 0">No payments due in the next 30 days.</div><% } %>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="padding:18px 22px;scroll-margin-top:90px" id="history">
+  <div class="card-head" style="align-items:center">
+    <h3>Payment history <span class="muted" style="font-weight:400;font-size:14px">(<%= historyTotal %>)</span></h3>
+    <nav class="tabs" aria-label="Filter payments">
+      <a href="<%= base %>/payments" class="<%= !view ? 'on' : '' %>">All</a>
+      <% ['Paid', 'Scheduled', 'Overdue'].forEach(s => { %><a href="<%= base %>/payments?status=<%= s %>" class="<%= view === s ? 'on' : '' %>"><%= s %></a><% }) %>
+    </nav>
+  </div>
+  <% if (history.length) { %>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Reference</th><th>Client</th><th>Method</th><th>Date</th><th>Status</th><th class="r">Amount</th><th></th></tr></thead>
+    <tbody>
+      <% history.forEach(p => { const u = userMap[p.userId]; %>
+        <tr>
+          <td class="b"><%= p.ref %><% if (p.note) { %><span class="s2" style="font-weight:400"><%= p.note %></span><% } %></td>
+          <td><% if (u) { %><a href="<%= base %>/users/<%= u.id %>" style="display:inline-flex;align-items:center;gap:10px"><span class="av sm"><%= h.categoryInitials(u.serviceId) %></span><span class="client-id"><%= h.clientRef(u) %></span></a><% } else { %><span class="muted">Deleted client</span><% } %></td>
+          <td><%= p.method %></td>
+          <td class="muted" style="white-space:nowrap"><%= h.longDate(p.date) %></td>
+          <td><span class="pill <%= h.pill(p.display) %>"><%= p.display %></span></td>
+          <td class="r b"><%= h.money(p.amount) %></td>
+          <td class="r">
+            <div class="menu">
+              <button type="button" class="icon-btn" style="border:none" data-menu-toggle aria-label="Payment actions"><%- icon('dots') %></button>
+              <div class="dd">
+                <% if (p.display !== 'Paid') { %><form method="post" action="<%= base %>/payments/<%= p.id %>/paid"><button type="submit"><%- icon('check') %>Mark as paid</button></form><% } %>
+                <form method="post" action="<%= base %>/payments/<%= p.id %>/delete" data-confirm="<%= p.ref %> will be removed permanently." data-confirm-title="Delete payment?" data-confirm-ok="Delete"><button type="submit" class="danger"><%- icon('trash') %>Delete</button></form>
+              </div>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table></div>
+  <% if (historyTotal > 10) { %>
+    <div class="pager">
+      <span class="muted">Showing <%= history.length %> of <%= historyTotal %></span>
+      <a class="btn btn-sm" href="<%= base %>/payments?<%= view ? 'status=' + view + '&' : '' %><%= showAll ? '' : 'all=1' %>#history" style="min-width:0;display:inline-flex"><%= showAll ? 'Show latest 10' : 'Show all ' + historyTotal %></a>
+    </div>
+  <% } %>
+  <% } else { %>
+    <div class="empty-state"><div class="ic red"><%- icon('card') %></div><h4>No <%= view ? view.toLowerCase() + ' ' : '' %>payments</h4><p><%= view === 'Overdue' ? 'Everything is up to date.' : 'Record a payment to see it here.' %></p></div>
+  <% } %>
+</div>
+
+<div class="modal" id="pay-modal" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+  <form class="box" method="post" action="<%= base %>/payments">
+    <div class="mh"><h3 id="pay-title">Record payment</h3><button type="button" class="icon-btn" style="border:none" data-close aria-label="Close"><%- icon('x') %></button></div>
+    <div class="mb"><div class="form-grid c2">
+      <div class="field"><label for="p-user">Client <span class="req">*</span></label><div class="select" style="width:100%"><select id="p-user" name="userId" required autofocus>
+        <option value="">Choose a client</option>
+        <% users.forEach(u => { %><option value="<%= u.id %>"><%= h.clientOption(u) %></option><% }) %>
+      </select></div></div>
+      <div class="field"><label for="p-amount">Amount (USD) <span class="req">*</span></label><input id="p-amount" name="amount" type="number" min="0.01" step="0.01" required></div>
+      <div class="field"><label for="p-status">Type</label><div class="select" style="width:100%"><select id="p-status" name="status"><option value="Paid">Paid (sent)</option><option value="Scheduled">Scheduled (future)</option></select></div></div>
+      <div class="field"><label for="p-date">Date</label><input id="p-date" name="date" type="date" value="<%= today %>"></div>
+      <div class="field"><label for="p-method">Method</label><div class="select" style="width:100%"><select id="p-method" name="method"><% methods.forEach(m => { %><option><%= m %></option><% }) %></select></div></div>
+      <div class="field"><label for="p-note">Note</label><input id="p-note" name="note" maxlength="200" placeholder="Optional"></div>
+    </div></div>
+    <div class="mf"><button type="button" class="btn btn-sm" data-close>Cancel</button><button type="submit" class="btn btn-sm btn-red">Save payment</button></div>
+  </form>
+</div>
+<%- include('../partials/foot') %>

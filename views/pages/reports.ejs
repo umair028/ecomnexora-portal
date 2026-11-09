@@ -1,0 +1,244 @@
+<%- include('../partials/head') %>
+<% /* round charts: a colourful palette that starts with the brand red */
+   const COLORS = ['#ff3131', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16']; %>
+<div class="head">
+  <div>
+    <h1>Reports</h1>
+    <div class="sub">Performance across all users · <%= ranges[range] %></div>
+  </div>
+  <div class="actions no-print">
+    <nav class="tabs" aria-label="Report range">
+      <% Object.entries(ranges).forEach(([k, l]) => { %><a href="<%= base %>/reports?range=<%= k %>" class="<%= range === k ? 'on' : '' %>"><%= l %></a><% }) %>
+    </nav>
+    <div class="menu">
+      <button type="button" class="btn btn-sm" style="height:40px" data-menu-toggle><%- icon('download') %>Export<%- icon('chevron') %></button>
+      <div class="dd">
+        <a href="<%= base %>/reports/sales.csv?range=<%= range %>"><%- icon('file') %>Sales (<%= ranges[range].toLowerCase() %>) CSV</a>
+        <a href="<%= base %>/users/export.csv"><%- icon('users') %>Users CSV</a>
+        <a href="<%= base %>/orders/export.csv"><%- icon('cart') %>Orders CSV</a>
+        <a href="<%= base %>/payments/export.csv"><%- icon('card') %>Payments CSV</a>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm" style="height:40px" onclick="window.print()"><%- icon('printer') %>Print / PDF</button>
+  </div>
+</div>
+
+<div class="grid g4 mb">
+  <div class="card kpi"><div class="lbl"><span class="ic red"><%- icon('dollar') %></span>Revenue</div><div class="val"><%= kpi.revenue %></div><div class="delta">From <%= kpi.contributors %> of <%= totalUsers %> users with sales entered</div></div>
+  <div class="card kpi"><div class="lbl"><span class="ic green"><%- icon('wallet') %></span>Combined balance</div><div class="val"><%= kpi.balance %></div><div class="delta">Current, all users</div></div>
+  <div class="card kpi"><div class="lbl"><span class="ic blue"><%- icon('cart') %></span>Avg. order value</div><div class="val"><%= kpi.aov %></div><div class="delta">Across <%= kpi.orderCount %> recorded orders</div></div>
+  <div class="card kpi"><div class="lbl"><span class="ic amber"><%- icon('return') %></span>Return rate</div><div class="val"><%= kpi.returnRate %></div><div class="delta"><%= kpi.returns %> returns reported by users</div></div>
+</div>
+
+<% const PIE = ['#ff3131', '#3b82f6', '#f59e0b', '#8b5cf6'], CAT = COLORS; /* order statuses: delivered (the biggest part) in the brand red */ const pct = (a, t) => (t ? Math.round((a / t) * 100) : 0); %>
+<div class="rgrid mb">
+  <!-- revenue by service category -->
+  <div class="card">
+    <div class="card-head"><div><h3>Revenue by service</h3><div class="cap">By service category · <%= ranges[range] %></div></div></div>
+    <% if (categories.length) { const catTotal = categories.reduce((a, c) => a + c.amount, 0); %>
+      <div class="r-donut" data-chart="<%= JSON.stringify({ type: 'donut', points: categories, colors: CAT, size: 190, stroke: 30, center: h.compact(catTotal).replace('.00', ''), sub: 'Total' }) %>"></div>
+      <div class="r-legend">
+        <% categories.slice(0, 6).forEach((c, i) => { %>
+          <div><span class="ic sm" style="color:<%= CAT[i % CAT.length] %>;background:color-mix(in srgb,<%= CAT[i % CAT.length] %> 12%,#fff)"><%- icon(c.icon) %></span><div><span class="ellipsis"><%= c.label %></span><b><%= pct(c.amount, catTotal) %>%</b></div></div>
+        <% }) %>
+      </div>
+    <% } else { %><div class="chart-empty" style="height:200px">No sales entered for this period yet.</div><% } %>
+  </div>
+
+  <!-- order status -->
+  <div class="card">
+    <div class="card-head"><div><h3>Order status</h3><div class="cap">All <%= h.num(orderStatus.reduce((a, s) => a + s.amount, 0), '0') %> orders</div></div><a class="link" href="<%= base %>/orders" style="font-size:14px">Orders</a></div>
+    <div class="r-donut" data-chart="<%= JSON.stringify({ type: 'donut', unit: 'count', points: orderStatus.filter(s => s.amount), colors: orderStatus.map((s, i) => PIE[i]).filter((c, i) => orderStatus[i].amount), size: 190, stroke: 70 }) %>"></div>
+    <div class="legend r-pie-legend">
+      <% const oTotal = orderStatus.reduce((a, s) => a + s.amount, 0); orderStatus.forEach((s, i) => { %><span><i style="background:<%= PIE[i] %>"></i><%= s.label %> <b><%= pct(s.amount, oTotal) %>%</b></span><% }) %>
+    </div>
+  </div>
+
+  <!-- insights -->
+  <div class="card r-insights">
+    <div class="ri-head"><span class="ri-badge"><%- icon('chart') %></span><div><h3>Insights</h3><div class="ri-sub">Worked out from your portal data</div></div></div>
+    <div class="ri-list">
+      <% insights.forEach(t => { %><div><span class="ri-ic"><%- icon(t.icon) %></span><p><%- t.html %></p></div><% }) %>
+    </div>
+    <span class="pill r ri-pill"><%- icon('check') %>Live · updates as you work</span>
+  </div>
+</div>
+
+<div class="rgrid mb">
+  <div class="card span2">
+    <div class="card-head"><div><h3>Revenue over time</h3><div class="cap">All users combined · <%= ranges[range] %></div></div></div>
+    <div data-chart="<%= JSON.stringify({ type: 'line', points: trend.points, height: 320, empty: 'No sales entered for this period yet.' }) %>"></div>
+  </div>
+  <div class="card">
+    <h3>Revenue by client</h3><div class="cap" style="margin-bottom:16px">Share of <%= ranges[range].toLowerCase() %></div>
+    <% if (share.length) { %>
+      <% const shareTotal = share.reduce((a, x) => a + x.amount, 0), SHOWN = 6;
+         const rows = (from, to) => share.slice(from, to).map((s, k) => ({ label: s.label, color: COLORS[(from + k) % COLORS.length], pct: ((s.amount / shareTotal) * 100).toFixed(0) })); %>
+      <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap">
+        <div data-chart="<%= JSON.stringify({ type: 'donut', points: share, colors: COLORS, size: 170, center: h.compact(shareTotal).replace('.00', ''), sub: ranges[range] }) %>"></div>
+        <div style="flex:1;min-width:180px">
+          <div class="list"><% rows(0, SHOWN).forEach(r => { %><div style="padding:9px 0;font-size:14px"><i style="width:10px;height:10px;border-radius:3px;background:<%= r.color %>;display:inline-block"></i><span class="grow"><%= r.label %></span><b><%= r.pct %>%</b></div><% }) %></div>
+          <% if (share.length > SHOWN) { %>
+            <div class="share-more" id="share-more"><div class="list"><% rows(SHOWN).forEach(r => { %><div style="padding:9px 0;font-size:14px"><i style="width:10px;height:10px;border-radius:3px;background:<%= r.color %>;display:inline-block"></i><span class="grow"><%= r.label %></span><b><%= r.pct %>%</b></div><% }) %></div></div>
+            <button type="button" class="btn btn-sm share-toggle" aria-expanded="false" aria-controls="share-more" data-more="View more (<%= share.length - SHOWN %>)" data-less="View less"><span>View more (<%= share.length - SHOWN %>)</span><%- icon('chevron') %></button>
+          <% } %>
+        </div>
+      </div>
+    <% } else { %><div class="chart-empty" style="height:200px">No sales entered for this period yet.</div><% } %>
+  </div>
+</div>
+
+<div class="rgrid mb">
+  <!-- orders by service category, stacked by status -->
+  <div class="card">
+    <div class="card-head"><div><h3>Orders by service</h3><div class="cap">Stacked by status</div></div></div>
+    <div data-chart="<%= JSON.stringify({ type: 'bar', unit: 'count', points: catOrders, stack: ORDER_STATUSES.map((s, i) => ({ key: s, label: s, color: PIE[i] })), height: 250, barWidth: 30, empty: 'No orders yet.' }) %>"></div>
+    <div class="legend"><% ORDER_STATUSES.forEach((s, i) => { %><span><i style="background:<%= PIE[i] %>"></i><%= s %></span><% }) %></div>
+  </div>
+
+  <!-- payouts summary -->
+  <div class="card r-payouts">
+    <h3>Total payouts</h3>
+    <div class="rp-num"><%= h.num(payouts.count, '0') %></div>
+    <div class="rp-split">
+      <a href="<%= base %>/payments?status=Paid" class="rp-box red"><b><%= payouts.paidCount %></b><span>Paid · <%= payouts.paidTotal %></span></a>
+      <a href="<%= base %>/payments?status=Scheduled" class="rp-box dark"><b><%= payouts.dueCount %></b><span>To pay · <%= payouts.dueTotal %></span></a>
+    </div>
+    <div class="rp-mini">
+      <div class="cap">Paid per month</div>
+      <% const pm = payouts.paidMonthly.slice(-9), pmMax = Math.max(1, ...pm); %>
+      <div class="rp-bars"><% pm.forEach((v, i) => { %><span style="height:<%= Math.max(4, (v / pmMax) * 100) %>%" title="<%= payouts.labels.slice(-9)[i] %>: <%= h.money(v) %>"></span><% }) %></div>
+    </div>
+  </div>
+
+  <!-- needs attention: the website's black-to-red hero -->
+  <div class="r-attention">
+    <div class="ra-top"><span><%- icon('alert') %>Needs attention</span><span class="ra-live">Live</span></div>
+    <div class="ra-big"><%= attention.overdue %></div>
+    <div class="ra-lbl">overdue payout<%= attention.overdue === 1 ? '' : 's' %><% if (attention.overdue) { %> · <%= attention.overdueTotal %> owed to <%= attention.overdueClients %> client<%= attention.overdueClients === 1 ? '' : 's' %><% } %></div>
+    <div class="ra-note">
+      <b><%- icon('clock') %><%= attention.pending %> pending orders</b>
+      <span><%= attention.pendingOld ? `${attention.pendingOld} have waited more than 48 hours.` : 'None has waited more than 48 hours.' %></span>
+    </div>
+    <a href="<%= base %>/payments?status=Overdue" class="ra-btn">Review payouts <%- icon('right') %></a>
+  </div>
+</div>
+
+<div class="rgrid mb">
+  <!-- payouts per month: paid vs still to pay -->
+  <div class="card span2">
+    <div class="card-head"><div><h3>Payouts per month</h3><div class="cap">Paid vs still to pay (scheduled or overdue) · 12 months</div></div></div>
+    <div data-chart="<%= JSON.stringify({ type: 'multi', fill: true, height: 270, labels: payouts.labels, series: [{ key: 'paid', label: 'Paid', color: '#ff3131', on: true, values: payouts.paidMonthly }, { key: 'due', label: 'To pay', color: '#231f20', on: true, values: payouts.dueMonthly }], empty: 'No payouts yet.' }) %>"></div>
+    <div class="legend"><span><i style="background:#ff3131"></i>Paid</span><span><i style="background:#231f20"></i>To pay</span></div>
+  </div>
+  <!-- payout methods -->
+  <div class="card">
+    <div class="card-head"><div><h3>Payout methods</h3><div class="cap">Share of all payouts</div></div></div>
+    <div class="r-meters">
+      <% methods.forEach((m, i) => { const p = pct(m.count, payouts.count); %>
+        <div class="rm">
+          <span class="ic sm <%= i ? 'dark' : 'red' %>"><%- icon(i ? 'card' : 'building') %></span>
+          <div class="grow">
+            <div class="rm-top"><b><%= m.label %></b><span><%= p %>%</span></div>
+            <div class="rm-sub"><%= m.count %> payouts · <%= h.compact(m.amount) %></div>
+            <div class="rm-bar"><span style="width:<%= p %>%;background:<%= ['#ff3131', '#231f20', '#a8a3a4'][i % 3] %>"></span></div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<div class="rgrid mb">
+  <!-- account health -->
+  <div class="card r-health">
+    <div class="card-head"><h3>Account health</h3></div>
+    <div class="r-tiles">
+      <% health.forEach((t, i) => { %>
+        <a href="<%= base + t.href %>"><span class="ic <%= i % 2 ? 'dark' : 'red' %>"><%- icon(t.icon) %></span><span class="rt-l"><%= t.label %></span><b><%= t.value %></b><span class="rt-s"><%= t.state %></span></a>
+      <% }) %>
+    </div>
+  </div>
+  <!-- delivery success gauge -->
+  <div class="card r-gauge-card">
+    <div class="card-head"><div><h3>Delivery success</h3><div class="cap">Delivered vs returned orders</div></div></div>
+    <% const N = 44, on = Math.round(N * delivery / 100); %>
+    <svg class="r-gauge" viewBox="0 0 200 200" role="img" aria-label="<%= delivery %>% delivered">
+      <% for (let k = 0; k < N; k++) { const a = (-225 + k * 270 / (N - 1)) * Math.PI / 180, r1 = 70, r2 = 90; %><line x1="<%= (100 + r1 * Math.cos(a)).toFixed(1) %>" y1="<%= (100 + r1 * Math.sin(a)).toFixed(1) %>" x2="<%= (100 + r2 * Math.cos(a)).toFixed(1) %>" y2="<%= (100 + r2 * Math.sin(a)).toFixed(1) %>" class="<%= k < on ? 'on' : '' %>" style="--d:<%= k * 18 %>ms"/><% } %>
+      <text x="100" y="100" text-anchor="middle" class="g-num"><%= delivery %>%</text>
+      <text x="100" y="124" text-anchor="middle" class="g-sub">delivered</text>
+    </svg>
+    <div class="cap" style="text-align:center"><b style="color:var(--ink)"><%= h.num(delivered, '0') %></b> delivered · <b style="color:var(--ink)"><%= h.num(returned, '0') %></b> returned</div>
+  </div>
+  <!-- client status -->
+  <div class="card">
+    <div class="card-head" style="margin-bottom:4px"><h3>Client status</h3><a class="link" href="<%= base %>/users" style="font-size:14px">View all</a></div>
+    <table class="r-mini-table"><thead><tr><th>Client</th><th>Balance</th><th>Status</th></tr></thead><tbody>
+      <% clientStatus.forEach(u => { %><tr><td><a href="<%= base %>/users/<%= u.id %>" class="b client-id"><%= h.clientRef(u) %></a><span class="s2 ellipsis"><%= h.serviceCategory(u.serviceId) %></span></td><td class="b"><%= h.compact(u.balance) %></td><td><span class="pill <%= h.pill(u.status) %>"><%= u.status %></span></td></tr><% }) %>
+    </tbody></table>
+  </div>
+</div>
+
+<div class="rgrid mb">
+  <!-- recent orders -->
+  <div class="card span2" style="padding:18px 22px">
+    <div class="card-head"><h3>Recent orders</h3><a class="link" href="<%= base %>/orders" style="font-size:14px">View all</a></div>
+    <div class="table-wrap"><table class="r-orders">
+      <thead><tr><th>Order</th><th>Client</th><th>Product</th><th>Date</th><th>Status</th><th class="r">Amount</th></tr></thead>
+      <tbody>
+        <% recentOrders.forEach(o => { %><tr><td class="b">#<%= o.number %></td><td class="client-id"><%= o.client %></td><td class="r-prod" title="<%= o.product %>"><%= o.product %></td><td class="muted"><%= h.shortDate(o.date) %></td><td><span class="pill <%= h.pill(o.status) %>"><%= o.status %></span></td><td class="r b"><%= h.money(o.amount, { cents: true }) %></td></tr><% }) %>
+      </tbody>
+    </table></div>
+  </div>
+  <!-- balance by service category -->
+  <div class="card">
+    <div class="card-head"><div><h3>Balance by service</h3><div class="cap">Current balances, by category</div></div></div>
+    <div data-chart="<%= JSON.stringify({ type: 'bar', points: catBalance, height: 280, barWidth: 34, empty: 'No balances yet.' }) %>"></div>
+  </div>
+</div>
+
+<div class="rgrid mb">
+  <!-- daily sales, last 30 days -->
+  <div class="card">
+    <div class="card-head"><div><h3>Daily sales</h3><div class="cap">All clients · last 30 days</div></div></div>
+    <div data-chart="<%= JSON.stringify({ type: 'line', points: daily, height: 230, empty: 'No daily sales entered yet.' }) %>"></div>
+  </div>
+  <!-- top products, horizontal bars -->
+  <div class="card">
+    <div class="card-head"><div><h3>Best-selling products</h3><div class="cap">Order value, excluding returns</div></div></div>
+    <% const tpMax = topProducts.length ? topProducts[0].amount : 1; %>
+    <div class="r-hbars">
+      <% topProducts.forEach(p => { %><div><span class="ellipsis" title="<%= p.label %>"><%= p.label %></span><div class="rh-bar"><i style="width:<%= Math.max(2, (p.amount / tpMax) * 100).toFixed(1) %>%"></i></div><b><%= h.compact(p.amount) %></b></div><% }) %>
+      <% if (!topProducts.length) { %><div class="muted">No orders yet.</div><% } %>
+    </div>
+  </div>
+  <!-- upcoming payouts -->
+  <div class="card">
+    <div class="card-head" style="margin-bottom:4px"><h3>Upcoming payouts</h3><a class="link" href="<%= base %>/payments" style="font-size:14px">Payments</a></div>
+    <div class="list">
+      <% upcoming.forEach(p => { const d = h.daysUntil(p.date); %>
+        <a href="<%= base %>/payments">
+          <span class="av"><%- icon(p.display === 'Overdue' ? 'alert' : 'calendar') %></span>
+          <div class="grow"><div class="t client-id"><%= p.client %></div><span class="s2"><%= p.method %> · <%= h.shortDate(p.date) %></span></div>
+          <div style="text-align:right"><div class="amt"><%= h.money(p.amount) %></div><span class="pill <%= p.display === 'Overdue' ? 'r' : 'b' %>"><%= p.display === 'Overdue' ? 'Overdue' : d === 0 ? 'Today' : `In ${d} day${d === 1 ? '' : 's'}` %></span></div>
+        </a>
+      <% }) %>
+      <% if (!upcoming.length) { %><div class="muted">Nothing scheduled.</div><% } %>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="padding:18px 22px">
+  <div class="card-head"><h3>Top products</h3><span class="muted" style="font-size:14px">By order value, excluding returns</span></div>
+  <% if (top.length) { const maxRev = top[0].revenue; %>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th>Client</th><th style="width:28%"></th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
+    <tbody>
+      <% top.forEach(t => { %>
+        <tr><td class="b"><%= t.product %></td><td class="muted"><%= t.user %></td><td><div class="progress"><span style="width:<%= (t.revenue / maxRev * 100).toFixed(1) %>%"></span></div></td><td class="r"><%= h.num(t.units) %></td><td class="r b"><%= h.money(t.revenue, { cents: true }) %></td></tr>
+      <% }) %>
+    </tbody>
+  </table></div>
+  <% } else { %><div class="empty-state"><p>No orders recorded yet.</p></div><% } %>
+</div>
+<%- include('../partials/foot') %>

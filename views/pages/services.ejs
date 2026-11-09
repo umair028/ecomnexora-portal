@@ -1,0 +1,117 @@
+<%- include('../partials/head') %>
+<%
+  const k = n => n >= 1000 ? '$' + +(n / 1000).toFixed(1) + 'K' : '$' + n;
+  const fill = s => JSON.stringify({ _action: base + '/services/' + s.id, _title: 'Edit service', _submit: 'Save changes',
+    name: s.name, category: s.category, description: s.description, status: s.status, monthlyTarget: s.monthlyTarget ?? '',
+    roi: s.roi || '', price: s.price || '', url: s.url || '', logo: s.logo || '', icon: s.icon, color: s.color });
+  const groups = categories.map(c => [c, services.filter(s => s.category === c)]).filter(([, list]) => list.length);
+  const other = services.filter(s => !categories.includes(s.category));
+  if (other.length) groups.push(['Other', other]);
+%>
+<div class="head">
+  <div>
+    <h1>Services</h1>
+    <div class="sub"><%= kpi.total %> services from ecomnexora.com · <%= kpi.assigned %> of <%= totalUsers %> users assigned to a service.</div>
+  </div>
+  <form class="actions" method="get" action="<%= base %>/services">
+    <div class="select"><select name="category" data-autosubmit aria-label="Filter by category">
+      <option value="">All categories</option>
+      <% categories.forEach(c => { %><option <%= category === c ? 'selected' : '' %>><%= c %></option><% }) %>
+    </select></div>
+    <div class="select"><select name="status" data-autosubmit aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <% statuses.forEach(s => { %><option <%= status === s ? 'selected' : '' %>><%= s %></option><% }) %>
+    </select></div>
+    <button type="button" class="btn btn-red" style="height:44px" data-modal="service-modal"
+      data-fill="<%= JSON.stringify({ _action: base + '/services', _title: 'New service', _submit: 'Add service', name: '', category: category || categories[0], description: '', status: 'Active', monthlyTarget: '', roi: '', price: '', url: '', logo: '', icon: 'box', color: 'red' }) %>"><%- icon('plus') %>New service</button>
+  </form>
+</div>
+
+<div class="grid g4 mb">
+  <div class="card kpi"><div class="lbl"><span class="ic red"><%- icon('box') %></span>Services offered</div><div class="val"><%= kpi.offered %></div><div class="delta"><%= kpi.total - kpi.offered %> paused</div></div>
+  <a class="card kpi" href="<%= base %>/users"><div class="lbl"><span class="ic green"><%- icon('users') %></span>Assigned users</div><div class="val"><%= kpi.assigned %></div><div class="delta">On a service</div></a>
+  <a class="card kpi" href="<%= base %>/users?service=none"><div class="lbl"><span class="ic amber"><%- icon('alert') %></span>Unassigned users</div><div class="val"><%= kpi.unassigned %></div><div class="delta">Need a service</div></a>
+  <div class="card kpi"><div class="lbl"><span class="ic dark"><%- icon('dollar') %></span>Balance on services</div><div class="val"><%= kpi.managed %></div><div class="delta">Assigned users combined</div></div>
+</div>
+
+<% if (!services.length) { %>
+  <div class="card empty-state"><div class="ic red"><%- icon('box') %></div><h4>No services match</h4><p>Try another category or status.</p><a href="<%= base %>/services" class="btn btn-sm" style="margin-top:14px">Clear filters</a></div>
+<% } %>
+
+<% groups.forEach(([group, list]) => { %>
+  <div class="group-title"><%= group %> <span><%= list.length %></span></div>
+  <div class="grid g3 mb">
+    <% list.forEach(s => { %>
+      <div class="card hover svc">
+        <div class="svc-top">
+          <% if (s.logo) { %><span class="brand-tile" title="<%= logos[s.logo] %>"><img src="<%= base %>/img/brands/<%= s.logo %>.svg" alt="<%= logos[s.logo] %>"></span>
+          <% } else { %><span class="ic lg <%= s.color %>"><%- icon(s.icon) %></span><% } %>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="pill <%= h.pill(s.status) %>"><%= s.status %></span>
+            <div class="menu">
+              <button type="button" class="icon-btn" style="border:none" data-menu-toggle aria-label="Actions for <%= s.name %>"><%- icon('dots') %></button>
+              <div class="dd">
+                <button type="button" data-modal="service-modal" data-fill="<%= fill(s) %>"><%- icon('edit') %>Edit</button>
+                <a href="<%= base %>/users?service=<%= s.id %>"><%- icon('users') %>View users</a>
+                <% if (s.url) { %><a href="<%= s.url %>" target="_blank" rel="noopener"><%- icon('link') %>Open on website</a><% } %>
+                <form method="post" action="<%= base %>/services/<%= s.id %>">
+                  <input type="hidden" name="only" value="status"><input type="hidden" name="status" value="<%= s.status === 'Paused' ? 'Active' : 'Paused' %>">
+                  <button type="submit"><%- icon(s.status === 'Paused' ? 'check' : 'clock') %><%= s.status === 'Paused' ? 'Activate' : 'Pause' %></button>
+                </form>
+                <form method="post" action="<%= base %>/services/<%= s.id %>/delete" data-confirm="<%= s.userCount ? s.userCount + ' user(s) on this service will become unassigned.' : 'No users are on this service.' %> This cannot be undone." data-confirm-title="Delete <%= s.name %>?" data-confirm-ok="Delete service">
+                  <button type="submit" class="danger"><%- icon('trash') %>Delete</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div class="svc-name"><%= s.name %></div>
+          <div class="svc-desc"><%= s.description || 'No description.' %></div>
+          <% if (s.roi || s.url) { %>
+            <div class="svc-meta">
+              <% if (s.roi) { %><span class="pill g">Est. ROI <%= s.roi %></span><% } %>
+              <% if (s.url) { %><a class="link" href="<%= s.url %>" target="_blank" rel="noopener">View on website ↗</a><% } %>
+            </div>
+          <% } %>
+        </div>
+        <div class="svc-stats">
+          <a href="<%= base %>/users?service=<%= s.id %>">Users<b><%= s.userCount %></b></a>
+          <div>Balance<b><%= h.money(s.balance) %></b></div>
+          <% if (s.monthlyTarget) { %><div>Sales target<b><%= k(s.monthlyTarget) %>/mo</b></div>
+          <% } else { %><div>Price<b><%= s.price || '—' %></b></div><% } %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% }) %>
+
+<div class="modal" id="service-modal" role="dialog" aria-modal="true" aria-labelledby="svc-title">
+  <form class="box wide" method="post" action="<%= base %>/services">
+    <div class="mh"><h3 id="svc-title" data-title>New service</h3><button type="button" class="icon-btn" style="border:none" data-close aria-label="Close"><%- icon('x') %></button></div>
+    <div class="mb">
+      <div class="form-grid c2">
+        <div class="field"><label for="svc-name">Name <span class="req">*</span></label><input id="svc-name" name="name" required maxlength="80" autofocus></div>
+        <div class="field"><label for="svc-cat">Category</label><div class="select" style="width:100%"><select id="svc-cat" name="category"><% categories.forEach(c => { %><option><%= c %></option><% }) %></select></div></div>
+        <div class="field" style="grid-column:1/-1"><label for="svc-desc">Description</label><textarea id="svc-desc" name="description" maxlength="300" style="height:84px"></textarea></div>
+        <div class="field"><label for="svc-target">Monthly sales target (USD)</label><input id="svc-target" name="monthlyTarget" type="number" min="0" step="500" placeholder="e.g. 10000"></div>
+        <div class="field"><label for="svc-roi">Estimated ROI</label><input id="svc-roi" name="roi" maxlength="20" placeholder="e.g. 15–20%"></div>
+        <div class="field"><label for="svc-price">Price</label><input id="svc-price" name="price" maxlength="40" placeholder="e.g. $4,999 or From $499/month"></div>
+        <div class="field"><label for="svc-status">Status</label><div class="select" style="width:100%"><select id="svc-status" name="status"><% statuses.forEach(s => { %><option><%= s %></option><% }) %></select></div></div>
+        <div class="field" style="grid-column:1/-1"><label for="svc-url">Page on ecomnexora.com</label><input id="svc-url" name="url" type="url" placeholder="https://ecomnexora.com/…"></div>
+        <div class="field" style="grid-column:1/-1"><label for="svc-logo">Platform logo</label><div class="select" style="width:100%"><select id="svc-logo" name="logo">
+          <option value="">None – use the icon below</option>
+          <% Object.entries(logos).forEach(([k, l]) => { %><option value="<%= k %>"><%= l %></option><% }) %>
+        </select></div><div class="hint">Shown on the service card and next to users on this service.</div></div>
+        <div class="field"><label for="svc-icon">Icon (when no logo)</label><div class="select" style="width:100%"><select id="svc-icon" name="icon">
+          <% icons.forEach(i => { %><option value="<%= i %>"><%= { box: 'Box', tag: 'Tag', cart: 'Cart', store: 'Store', truck: 'Truck', users: 'People', shield: 'Shield', send: 'Send', play: 'Play', card: 'Card' }[i] %></option><% }) %>
+        </select></div></div>
+        <div class="field"><label for="svc-color">Icon colour</label><div class="select" style="width:100%"><select id="svc-color" name="color">
+          <% colors.forEach(c => { %><option value="<%= c %>"><%= { red: 'Brand red', dark: 'Black', green: 'Green', blue: 'Blue', amber: 'Amber' }[c] %></option><% }) %>
+        </select></div></div>
+      </div>
+    </div>
+    <div class="mf"><button type="button" class="btn btn-sm" data-close>Cancel</button><button type="submit" class="btn btn-sm btn-red" data-submit-label>Add service</button></div>
+  </form>
+</div>
+<%- include('../partials/foot') %>
