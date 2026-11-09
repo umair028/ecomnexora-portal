@@ -1,4 +1,4 @@
 node_modules/
-data/db.json
-data/*.tmp
+# client data (names, emails, phones, store links, admin password hash) and its backups: never commit
+data/
 .env
