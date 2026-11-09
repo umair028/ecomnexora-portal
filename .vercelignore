@@ -1,0 +1,8 @@
+# Never upload real client data, local secrets or large raw video exports to Vercel
+data/
+exports/
+.env
+.env*
+!.env.example
+node_modules/
+push-to-github.sh

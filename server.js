@@ -1,6 +1,8 @@
 const path = require('path');
 const crypto = require('crypto');
 try { process.loadEnvFile(path.join(__dirname, '.env')); } catch {}
+// Vercel's filesystem is read-only except /tmp: keep a demo copy of the data there (lost on restart)
+if (process.env.VERCEL && !process.env.DB_FILE) process.env.DB_FILE = '/tmp/nexora-db.json';
 
 const express = require('express');
 const session = require('express-session');
@@ -102,4 +104,6 @@ if (BASE) {
 server.use(BASE || '/', app);
 
 db.all('users'); // load data now: runs catalog updates and any data/pending-import.json at start-up
-server.listen(PORT, () => console.log(`Ecom Nexora portal running at http://localhost:${PORT}${BASE}/`));
+// On Vercel the platform runs the exported app; everywhere else start a normal server
+if (!process.env.VERCEL) server.listen(PORT, () => console.log(`Ecom Nexora portal running at http://localhost:${PORT}${BASE}/`));
+module.exports = server;
