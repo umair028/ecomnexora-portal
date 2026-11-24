@@ -822,3 +822,6 @@ section>.hscroll{grid-auto-columns:minmax(260px,calc((100% - 64px) / 5))}
 @keyframes barGrowY{from{transform:scaleY(0)}}
 @media (prefers-reduced-motion:reduce){.r-gauge line.on,.rm-bar span,.rh-bar i,.progress span,.rp-bars span{animation:none}}
 @media print{.r-attention{print-color-adjust:exact;-webkit-print-color-adjust:exact}.rp-box{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
+/* demo mode: shown on every page, including print */
+.sample-label{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;font-size:13px;color:var(--muted)}

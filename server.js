@@ -70,6 +70,10 @@ app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Not signed in' });
     return res.redirect('/login?next=' + encodeURIComponent(req.url));
   }
+  next();
+});
+app.use(require('./lib/demo').middleware); // moves sample data forward when DEMO_DATA=true
+app.use((req, res, next) => {
   res.locals.admin = db.settings().admin;
   res.locals.unread = db.all('messages').filter(m => m.from === 'user' && !m.read).length;
   next();

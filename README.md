@@ -104,3 +104,10 @@ lib/helpers.js     formatting and calculations
 views/             EJS templates (partials/ = layout, pages/ = screens)
 public/            CSS, JS (charts + interactions), images
 ```
+
+## Demo mode
+
+With `DEMO_DATA=true`, sample clients move forward every day: new orders, order statuses, payouts and charts. The first
+page view of the day catches up (up to 62 days). Every page is labelled "Sample data" and exports are named
+`sample-data-…`. All clients that exist when it is first switched on are treated as samples; clients added later or
+connected to a business account are never touched. The data from before is kept as `db.before-demo.json`.

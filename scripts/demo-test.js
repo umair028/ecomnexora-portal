@@ -1,0 +1,53 @@
+// Demo mode on a throwaway database: `node scripts/demo-test.js [copy-of-db.json]`
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexora-demo-'));
+process.env.DB_FILE = path.join(dir, 'db.json');
+process.env.DEMO_DATA = '';
+if (process.argv[2]) fs.copyFileSync(process.argv[2], process.env.DB_FILE);
+const db = require('../lib/db');
+const demo = require('../lib/demo');
+let failures = 0;
+const ok = (c, label) => { console.log(`${c ? '  ✓' : '  ✗'} ${label}`); if (!c) failures++; };
+const iso = n => { const d = new Date(); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const orders = () => db.all('orders');
+const today = iso(0);
+
+ok(demo.advance() === 0 && !db.all('users').some(u => u.demo), 'does nothing unless DEMO_DATA=true');
+process.env.DEMO_DATA = 'true';
+const start = process.argv[2] ? today : iso(40);
+const before = orders().length;
+const peak = u => Math.max(0, ...(u.sales?.year || []).map(p => p.amount));
+const limits = new Map(db.all('users').map(u => [u.id, Math.max(peak(u), (u.totals?.month || 0) * 1.6, 1)]));
+const paidBefore = db.all('payments').filter(p => p.status === 'Paid').length;
+const moved = demo.advance(start);
+console.log(`  moved ${moved} days, ${before} → ${orders().length} orders`);
+ok(orders().some(o => o.date === start) && !orders().some(o => o.date > start), 'newest order is today, none in the future');
+ok(new Set(orders().map(o => o.id)).size === orders().length && new Set(orders().map(o => o.number)).size === orders().length, 'order ids and numbers are unique');
+ok(!orders().some(o => db.get('users', o.userId)?.demo && o.status === 'Pending' && (Date.parse(start) - Date.parse(o.date)) / 864e5 > 2), 'old orders are no longer pending');
+ok(db.all('payments').filter(p => p.status === 'Paid').length > paidBefore, 'due payouts are paid and rescheduled');
+ok(!db.all('payments').some(p => p.status === 'Scheduled' && p.date <= start && db.get('users', p.userId)?.status === 'Active'), 'no active client has an overdue payout');
+const label = (d => `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()]} ${d.getUTCDate()}`)(new Date(start));
+ok(db.all('users').some(u => u.sales?.month?.at(-1)?.label === label), '30-day charts end today');
+ok(db.all('users').every(u => [...(u.sales?.month || []), ...(u.sales?.year || [])].every(p => Number.isFinite(p.amount))), 'chart numbers are valid');
+ok(db.all('users').every(u => peak(u) <= limits.get(u.id)), '12-month charts have no artificial spike');
+ok(fs.existsSync(path.join(dir, 'db.before-demo.json')), 'original data is kept as db.before-demo.json');
+const same = JSON.stringify(db.all('orders'));
+ok(demo.advance(start) === 0 && JSON.stringify(db.all('orders')) === same, 'a second visit the same day changes nothing');
+
+const real = db.insert('users', { name: 'Real', status: 'Active', sales: { month: [{ label: 'Jan 1', amount: 5 }] } });
+const realOrder = db.insert('orders', { number: 'R-1', userId: real.id, product: 'P', units: 1, amount: 5, status: 'Pending', date: start });
+const linked = db.all('users').find(u => u.demo && u.sales?.month?.length);
+linked.accounts = [{ platform: 'shopify', url: 'https://x.myshopify.com' }];
+const snap = JSON.stringify([real, realOrder, linked]);
+const next = new Date(start); next.setUTCDate(next.getUTCDate() + 10);
+demo.advance(next.toISOString().slice(0, 10));
+ok(JSON.stringify([db.get('users', real.id), db.get('orders', realOrder.id), linked]) === snap, 'clients added later or connected to a store are untouched');
+const far = new Date(start); far.setUTCDate(far.getUTCDate() + 800);
+ok(demo.advance(far.toISOString().slice(0, 10)) === 62, 'a very long gap is capped');
+ok(!orders().some(o => o.demo && (far - Date.parse(o.date)) / 864e5 > 182), 'old generated orders are cleared');
+fs.rmSync(dir, { recursive: true, force: true });
+console.log(failures ? `\n${failures} demo check(s) failed.` : '\nAll demo checks passed.');
+process.exit(failures ? 1 : 0);
