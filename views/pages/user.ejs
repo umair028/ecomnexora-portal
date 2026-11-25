@@ -26,6 +26,7 @@
   <%# privacy: identified by Client ID only; name, store and channel stay in the data for internal use %>
   <h1><%= h.clientRef(user) %> <span class="pill <%= h.pill(user.status) %>"><%= user.status %></span></h1>
   <div class="sub"><%= h.serviceCategory(user.serviceId) %> · Managed Account</div>
+  <% if (user.demoSales) { %><div class="sample-label" role="note" style="margin:10px 0 0"><b><%= user.storeName %></b><span class="pill r"><%= h.DEMO_SALES %></span></div><% } %>
 </div>
 
 <% if (isChannel) { %>
@@ -92,6 +93,15 @@
   </table></div>
   <% } else { %><div class="empty-state" style="padding:28px"><p>No orders recorded for this user yet.</p></div><% } %>
 </div>
+<% if (user.products && user.products.length) { %>
+<div class="card" style="padding:18px 22px;margin-top:18px">
+  <div class="card-head"><div><h3>Store products</h3><div class="cap"><%= user.products.length %> listings<%= user.productsAt ? ' as of ' + h.longDate(user.productsAt) : '' %></div></div></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th class="r">Listed price</th></tr></thead>
+    <tbody><% user.products.forEach(p => { %><tr><td style="white-space:normal"><%= p.title %></td><td class="r b"><%= h.money(p.price, { cents: true }) %></td></tr><% }) %></tbody>
+  </table></div>
+</div>
+<% } %>
 <% } %>
 
 <script>

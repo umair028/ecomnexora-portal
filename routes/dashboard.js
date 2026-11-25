@@ -92,13 +92,16 @@ router.get('/', (req, res) => {
 router.get('/api/search', (req, res) => {
   const q = h.str(req.query.q, 80).toLowerCase();
   if (!q) return res.json([]);
+  const squash = v => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const tight = squash(q); // "troy teske shop" also finds "troyteskeshop"
   const matches = db.all('users').filter(u =>
     [h.clientId(u), u.name, u.storeName, u.email, h.serviceName(u.serviceId), h.serviceCategory(u.serviceId)].some(v => String(v || '').toLowerCase().includes(q))
+    || (tight.length > 2 && [u.name, u.storeName, ...(u.searchNames || [])].some(v => squash(v).includes(tight)))
   );
   if (req.query.ids) return res.json(matches.map(u => u.id)); // Users page: ids of every match
   res.json(matches.slice(0, 6).map(u => ({
     id: u.id, name: h.clientRef(u), initials: h.categoryInitials(u.serviceId),
-    sub: [h.serviceCategory(u.serviceId), h.ANON_SUB].join(' · '), status: u.status,
+    sub: [h.serviceCategory(u.serviceId), h.clientSub(u)].join(' · '), status: u.status,
   })));
 });
 

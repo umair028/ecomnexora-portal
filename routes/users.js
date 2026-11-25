@@ -138,7 +138,7 @@ router.get('/users', (req, res) => {
   // privacy: rows carry only the Client ID, category and non-identifying fields (names stay server-side)
   const users = db.all('users').map(u => ({
     id: u.id, clientId: h.clientRef(u), category: h.serviceCategory(u.serviceId), serviceId: u.serviceId || '',
-    status: u.status, country: u.country, salesToday: u.salesToday, balance: u.balance, orders: u.orders,
+    status: u.status, country: u.country, sub: h.clientSub(u), salesToday: u.salesToday, balance: u.balance, orders: u.orders,
   }));
   const categories = [...new Set(db.all('services').map(s => h.serviceCategory(s.id)))].sort().concat('Unassigned');
   // ?service=<id> (from the Services page) filters one service; ?service=none → Unassigned; ?category=… → a category

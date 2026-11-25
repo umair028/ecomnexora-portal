@@ -57,7 +57,7 @@
         <tr>
           <td class="b">#<%= o.number %></td>
           <td>
-            <% if (u) { %><a href="<%= base %>/users/<%= u.id %>" style="display:flex;align-items:center;gap:10px"><span class="av sm"><%= h.categoryInitials(u.serviceId) %></span><span><span class="b client-id"><%= h.clientRef(u) %></span><span class="s2"><%= h.ANON_SUB %></span></span></a>
+            <% if (u) { %><a href="<%= base %>/users/<%= u.id %>" style="display:flex;align-items:center;gap:10px"><span class="av sm"><%= h.categoryInitials(u.serviceId) %></span><span><span class="b client-id"><%= h.clientRef(u) %></span><span class="s2"><%= h.clientSub(u) %></span></span></a>
             <% } else { %><span class="muted">Deleted client</span><% } %>
           </td>
           <td><%= o.product %></td>

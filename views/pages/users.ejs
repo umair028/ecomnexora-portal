@@ -27,7 +27,7 @@
           <tr class="clickable" tabindex="0" data-href="<%= base %>/users/<%= u.id %>"
               data-id="<%= u.id %>" data-search="<%= [u.clientId, u.category, u.country, u.status].join(' ').toLowerCase() %>"
               data-service="<%= u.serviceId %>" data-category="<%= u.category %>" data-status="<%= u.status %>">
-            <td><div class="b client-id"><%= u.clientId %></div><span class="s2"><%= h.ANON_SUB %></span></td>
+            <td><div class="b client-id"><%= u.clientId %></div><span class="s2"><%= u.sub %></span></td>
             <td><% const logo = h.serviceLogo(u.serviceId), ci = h.categoryIcon(u.category); %><span class="svc-cat"><% if (logo) { %><span class="brand-tile sm"><img src="<%= base %>/img/brands/<%= logo %>.svg" alt=""></span><% } else { %><span class="ic sm <%= ci[1] %>"><%- icon(ci[0]) %></span><% } %><%= u.category %></span></td>
             <td><span class="pill <%= h.pill(u.status) %>"><%= u.status %></span></td>
             <td class="r"><%= h.money(u.salesToday) %></td>
