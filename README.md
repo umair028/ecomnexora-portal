@@ -16,7 +16,7 @@ Open http://localhost:3000. Use `npm run dev` to auto-restart when files change.
 The first start creates `data/db.json` with sample data and an admin account:
 
 - Email: `admin@ecomnexora.com`
-- Password: `nexora-admin`
+- Password: `admin123`
 
 Change both in **Settings** after signing in. To choose different starting values, copy `.env.example` to `.env`
 and edit `ADMIN_EMAIL` / `ADMIN_PASSWORD` before the first start (or run `npm run seed` afterwards).
