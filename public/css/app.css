@@ -824,4 +824,4 @@ section>.hscroll{grid-auto-columns:minmax(260px,calc((100% - 64px) / 5))}
 @media print{.r-attention{print-color-adjust:exact;-webkit-print-color-adjust:exact}.rp-box{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 
 /* demo mode: shown on every page, including print */
-.sample-label{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;font-size:13px;color:var(--muted)}
+.sample-label{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;font-size:13px;color:var(--muted)}
