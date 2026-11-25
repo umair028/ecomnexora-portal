@@ -45,8 +45,8 @@ router.get('/orders', (req, res) => {
 });
 
 router.get('/orders/export.csv', (req, res) => {
-  const rows = [['Order', 'User', 'Product', 'Date', 'Status', 'Units', 'Amount', 'Note']];
-  for (const o of filtered(req.query)) rows.push([o.number, db.get('users', o.userId)?.name || 'Deleted user', o.product, o.date, o.status, o.units, o.amount, db.get('users', o.userId)?.demoSales ? h.DEMO_SALES : '']);
+  const rows = [['Order', 'User', 'Product', 'Date', 'Status', 'Units', 'Amount']];
+  for (const o of filtered(req.query)) rows.push([o.number, db.get('users', o.userId)?.name || 'Deleted user', o.product, o.date, o.status, o.units, o.amount]);
   res.attachment('orders.csv').type('text/csv').send(h.csv(rows));
 });
 

@@ -1,0 +1,3 @@
+<%# Marketplace the client sells on, from their service's platform logo %>
+<% const logo = h.serviceLogo(user.serviceId), platformName = { amazon: 'Amazon', shopify: 'Shopify', facebook: 'Facebook', walmart: 'Walmart', tiktok: 'TikTok', youtube: 'YouTube', ebay: 'eBay' }[logo]; %>
+<div class="kv"><span>Platform</span><% if (platformName) { %><span style="display:inline-flex;align-items:center;gap:8px"><img src="<%= base %>/img/brands/<%= logo %>.svg" alt="" width="20" height="20"><%= platformName %></span><% } else { %><span>—</span><% } %></div>
